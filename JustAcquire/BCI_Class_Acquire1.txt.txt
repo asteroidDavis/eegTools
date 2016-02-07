@@ -1,0 +1,29 @@
+Instructions for First Recording
+
+
+1) Hook Bruce Up
+- show how to align cap
+- naming convention on electrodes
+- skin prep
+- make it hurt
+- cold gel - just enough
+
+2) show how program works in SIMULINK
+
+3) Take data with following instructions
+
+
+0 - start recording, wait for data to settle
+1 - grind teeth
+2 - rest
+3 - roll eyes
+4 - rest
+5 - blink
+6 - rest
+7 - close eyes and rest (30s)
+8 - open eyes
+9 - close eyes and rest (30s)
+10 - open eyes
+11 - rest
+
+stop recording
