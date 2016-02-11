@@ -2,7 +2,7 @@
 %Loads the data
 clc, clear all, close all
 
-FileName = 'JustAcquire\NateData_2016_1_28_14_57_14.mat';
+FileName = 'JustAcquire\DummyData_2016_2_4_15_25_16.mat';
 load(FileName);
 
 %%
