@@ -1,6 +1,6 @@
-classdef signalTiming
-    %UNTITLED Summary of this class goes here
-    %   Detailed explanation goes here
+classdef SignalTiming
+    %SignalTiming: All the necassary time intervals and rates for eeg
+    %acquisition.
     
     properties
     end
