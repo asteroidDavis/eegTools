@@ -36,11 +36,11 @@ classdef EegGui < handle
                 'characters');
             
             %puts a menue panel at the left side of the gui
-            this.menuPanel = uipanel('Title', 'Controls', 'FontSize', 11,...
-                'BackgroundColor', 'white', 'Position', [0 0 1/3 1]);
+            this.menuPanel = uipanel('Title', 'Controls',...
+                'FontSize', 11, 'BackgroundColor', 'white', 'Position',...
+                [0 0 1/3 1]);
             
-            this.plotsPanel = uipanel('Title', 'Plots', 'FontSize', 10, ...
-                'BackgroundColor', 'white', 'Position', [1/3 0 2/3 1]);
+            this.plotsPanel = uipanel('Title', 'Plots', 'FontSize'
             
             %makes the figure visible once everything is added
             this.eegFigHandle.Visible = 'on';
