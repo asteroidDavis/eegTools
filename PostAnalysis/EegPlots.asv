@@ -17,29 +17,47 @@ classdef EegPlots
     end
     
     methods(Access = public)
-        function this = EegPlots()
+        function this = EegPlots(varargin)
+             %allows case insentive parameters and ignore unknown parameters
+            parser = inputParser;
+            parser.StructExpand = 0;
             
+            %creates default axis when none are expressed
+            defaultXAxis = struct('label', 'x-axis', 'lim', [0 60],...
+                'domain', {'frequency', 'time'});
+            defaultYAxis = struct('label', 'y-axis', 'lim', [-1 1],...
+                'domain', {'normalized data', 'log power'});
+            
+            %allows named labeled unorder parameters
+            addRequired(parser, 'electrodes', @iscellstr);
+            addRequired(parser, 'tasks', @iscellstr);
+            addParameter(parser, 'x', defaultXAxis, @validateAxis);
+            addParameter(parser, 'y', defaultYAxis, @validateAxis);
+            
+            parse(parser, varargin{:});
+            this.axis.x = parser.Results.x;
+            this.axis.y = parser.Results.y;
         end
         
-        function setAxis(x, y)
-            %allows case insentive parameters and ignore unknown parameters
-            parser = inputParser('CaseSensitive', 0, 'KeepUnmatched', 1);
-            
-            defaultXAxis = struct('label', 'x-axis', 'lim', [0 60],... 'domain'{
-            
-            addOptional(parser, x, defaultXAxis, @validateAxis);
-            addOptional(parser, y, defaultYAxis, @validateAxis);
+        function setAxis(this, xAxis, yAxis)
+            if( this.validateAxis(xAxis) && this.validateAxis(yAxis))
+                this.axis.x = xAxis;
+                this.axis.y = yAxis;
+            else
+                warning('xAxis, yAxis do not pass validation for axis.setAxis');
+            end
+        end
+        function axes = getAxis(this)
+           axes = this.axis;
         end
     end
     
     methods(Access = private)
         %Given an axis variable
-        function isAxis = validateAxis(testee)
+        function isAxis = validateAxis(this, testee)
             %Is the vairable a struct with a label, lim, and domain
-            isAxis = isstruct(testee) &&  exist(testee.label, 'var') &&...
-                exist(testee.lim, 'var') && exist(testee.domain, 'var') &&...
-                ischar(testee.label) && isnumeric(testee.lim) &&...
-                iscellstr(testee.domain);
+            isAxis = isstruct(testee) && is(testee.label) &&...
+                isnumeric(testee.lim) && iscellstr(testee.domain);
         end
     end
 end
