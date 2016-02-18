@@ -1,0 +1,46 @@
+classdef EegPlots
+    %UNTITLED2 Summary of this class goes here
+    %   Detailed explanation goes here
+    
+    properties(Access = private)
+        axis
+%             axis.x
+%                 axis.x.label
+%                 axis.x.lim
+%                 axis.x.domain
+%             axis.y
+%                 axis.y.label
+%                 axis.y.lim
+%                 axis.y.domain
+        electrodes
+        tasks
+    end
+    
+    methods(Access = public)
+        function this = EegPlots()
+            
+        end
+        
+        function setAxis(x, y)
+            %allows case insentive parameters and ignore unknown parameters
+            parser = inputParser('CaseSensitive', 0, 'KeepUnmatched', 1);
+            
+            defaultXAxis = struct('label', 'x-axis', 'lim', [0 60],... 'domain'{
+            
+            addOptional(parser, x, defaultXAxis, @validateAxis);
+            addOptional(parser, y, defaultYAxis, @validateAxis);
+        end
+    end
+    
+    methods(Access = private)
+        %Given an axis variable
+        function isAxis = validateAxis(testee)
+            %Is the vairable a struct with a label, lim, and domain
+            isAxis = isstruct(testee) &&  exist(testee.label, 'var') &&...
+                exist(testee.lim, 'var') && exist(testee.domain, 'var') &&...
+                ischar(testee.label) && isnumeric(testee.lim) &&...
+                iscellstr(testee.domain);
+        end
+    end
+end
+
