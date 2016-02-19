@@ -3,19 +3,17 @@ classdef Steps
     %   isStep(testee) - checks if testee is a step object
     %   isSteps(testee) - checks if testee is an array of step objects
     
-    %the fields a step would have if it were a class
-    properties(Access = private)
-        startTime
-        endTime
+    properties
+        
     end
     
-    methods(Static)
+    methods(Access = Public)
         function isStep = isStep(testee)
             %checks if all the data types match a steps data types
             isStep = isstruct(testee) && isnumeric(testee.startTime) &&...
-                    isnumeric(testee.endTime);
-            %ensures the step has an increasing time vector
-            isStep = isStep && (testee.startTime < testee.endTime);
+                    isnumeric(testee.endTime) && isnumeric(testee.frequency);
+            %ensures the step has a positive time vector
+            isStep = isStep && startTime > endTime;
         end
         
         function isSteps = isSteps(testee)
@@ -23,7 +21,7 @@ classdef Steps
             isSteps = ismatrix(testee);
             %checks if every element of testee is a step
             for test = testee
-                isSteps = Steps.isStep(test);
+                isSteps = isStep(test);
             end
         end
     end

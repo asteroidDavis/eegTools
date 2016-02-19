@@ -3,14 +3,15 @@ classdef EegTiming
     %   Detailed explanation goes here
     
     properties(Access = private)
-        %2d array of steps vs start and end time of each step. Also
-        %supports different frequencies for each interval of steps
+        %2d array of steps vs start and end time of each step.
         steps
             %steps.startTime
             %steps.endTime
-            %steps.frequency
+        %the frequency measurements were taken at
         acquisitionFrequency
+        %The minimum frequency which can be detected is Facq/2
         nyquistFrequency
+        %the maximum time in this recording
         maxTime
     end
     
@@ -23,9 +24,19 @@ classdef EegTiming
             parser = inputParser;
             parser.StructExpand = 0;
             
-            d
+            %steps and acquisition frequency are required parameters
+            addParameter(parser, 'steps', @Steps.isSteps);
+            addParameter(parser, 'acquisitionFrequency', @isnumeric);
             
-            addParameter(parser, 'steps', @validateSteps);
+            %parses the parameters
+            parse(parser, varargin{:});
+            this.steps = parser.Results.steps;
+            this.acquisitionFrequency = parser.Results.acquisitionFrequency;
+            
+            %defines nyquistFrequency and maxTime based on requied
+            %parameters
+            this.nyquistFrequency = this.acquisitionFrequency/2;
+            this.maxTime = this.steps(end).endTime;
         end
         
         %validates and sets the acquisition frequency
@@ -66,9 +77,6 @@ classdef EegTiming
         
     end
     
-    methods(Access = private)
-        function is
-    end
     
 end
 

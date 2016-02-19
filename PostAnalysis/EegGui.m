@@ -29,45 +29,6 @@ classdef EegGui < handle
         
     end
     
-    methods(Access = private)
-        
-        %When the user clicks the + next to 'Tasks'
-        function success = toggleTaskSelection(this)
-            %And the task selection field is a dropdown
-            if(strcmp(get(this.taskSelection, 'Style'), 'popupmenu') == 1)
-                %Then the task selection field becomes editable text
-                this.taskSelection = uicontrol(this.tasksPanel, 'Style',...
-                    'edit', 'FontSize', 10, 'Units', 'normalized',...
-                    'Position', [0 2/3 1 1/6]);
-                disp('Toggled');
-                success = 1;
-            %Or the task selection field is editable text
-            elseif(strcmp(get(this.taskSelection, 'Style'), 'edit') == 1)
-                this.tasks{end+1} = get(this.taskSelection, 'String');
-                %And the user added tasks
-                if(size(this.tasks) >= 1)
-                    %display a task selector with the added tasks
-                    this.taskSelection = uicontrol(this.tasksPanel, 'Style',...
-                        'popupmenu', 'FontSize', 10, 'Units', 'normalized',...
-                        'Position', [0 2/3 1 1/6], 'String', this.tasks);
-                else
-                    %display the default task selector
-                    this.taskSelection = uicontrol(this.tasksPanel, 'Style',...
-                        'popupmenu', 'FontSize', 10, 'Units', 'normalized',...
-                        'Position', [0 2/3 1 1/6],...
-                        'String', {this.defaultTaskMessage});
-                end
-                success = 1;
-            else
-                warning(strcat('Task Selector: taskSelection is type: ',...
-                    get(this.taskSelection, 'Style'), '. \nResetting to ',...
-                    'popupmenu.'));
-                success = 0;
-            end
-        end
-        
-    end
-    
     methods(Access = public)
         %constructs the gui
         function this = EegGui()
@@ -129,6 +90,45 @@ classdef EegGui < handle
             %makes the figure visible once everything is added
             this.eegFigHandle.Visible = 'on';
         end
+    end
+    
+    methods(Access = private)
+        
+        %When the user clicks the + next to 'Tasks'
+        function success = toggleTaskSelection(this)
+            %And the task selection field is a dropdown
+            if(strcmp(get(this.taskSelection, 'Style'), 'popupmenu') == 1)
+                %Then the task selection field becomes editable text
+                this.taskSelection = uicontrol(this.tasksPanel, 'Style',...
+                    'edit', 'FontSize', 10, 'Units', 'normalized',...
+                    'Position', [0 2/3 1 1/6]);
+                disp('Toggled');
+                success = 1;
+            %Or the task selection field is editable text
+            elseif(strcmp(get(this.taskSelection, 'Style'), 'edit') == 1)
+                this.tasks{end+1} = get(this.taskSelection, 'String');
+                %And the user added tasks
+                if(size(this.tasks) >= 1)
+                    %display a task selector with the added tasks
+                    this.taskSelection = uicontrol(this.tasksPanel, 'Style',...
+                        'popupmenu', 'FontSize', 10, 'Units', 'normalized',...
+                        'Position', [0 2/3 1 1/6], 'String', this.tasks);
+                else
+                    %display the default task selector
+                    this.taskSelection = uicontrol(this.tasksPanel, 'Style',...
+                        'popupmenu', 'FontSize', 10, 'Units', 'normalized',...
+                        'Position', [0 2/3 1 1/6],...
+                        'String', {this.defaultTaskMessage});
+                end
+                success = 1;
+            else
+                warning(strcat('Task Selector: taskSelection is type: ',...
+                    get(this.taskSelection, 'Style'), '. \nResetting to ',...
+                    'popupmenu.'));
+                success = 0;
+            end
+        end
+        
     end
 end
 
