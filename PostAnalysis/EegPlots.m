@@ -1,6 +1,14 @@
 classdef EegPlots
-    %UNTITLED2 Summary of this class goes here
-    %   Detailed explanation goes here
+    %EegPlots -- EegPlots( electrodes, tasks, xAxis, yAxis)
+    %   -electrodes is a cell array of electrode names. ie {'Cz', 'Pz'}
+    %   -tasks is a cell array of the name of each experiment ie. {'rest',
+    %       'blink'}
+    %   -xAxis is an optional struct containing info about the x-axis ie. 
+    %       struct( 'label', 'x-axis', 'lim', [0 60], 'domain', {{
+    %       'frequency', 'time'}}
+    %   -yAxis is an optional struct with info about the y-axis
+    %WARNING: Domain must be a cell inside a cell
+    
     
     properties(Access = private)
         axis
@@ -50,6 +58,30 @@ classdef EegPlots
         end
         function axes = getAxis(this)
            axes = this.axis;
+        end
+        
+        %validates and sets the electrodes object
+        function setElectrodes(this, electrodes)
+            if(iscellstr(electrodes))
+                this.electrodes = electrodes;
+            else
+                warning(strcat(electrodes, ' is not a cell array of strings'));
+            end
+        end
+        function electrodes = getElectrodes(this)
+            electrodes = this.electrodes;
+        end
+        
+        %validates and sets the tasks object
+        function setTasks(this, tasks)
+            if(iscellstr(tasks))
+                this.tasks = tasks;
+            else
+                warning(strcat(tasks, ' is not a cell array of strings'));
+            end
+        end
+        function tasks = getTasks(this)
+            tasks = this.tasks;
         end
     end
     
