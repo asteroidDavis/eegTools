@@ -76,10 +76,10 @@ classdef EegGui < handle
                 'Fontsize', 10, 'BackgroundColor', 'white', 'String', '+',...
                 'Units', 'normalized', 'Position', [1/2 5/6 1/4 1/6],...
                 'Callback', @(src, event) toggleTaskSelection(this));
-            this.removeTask = uicontrol(this.tasksPanel, 'Style', 'pushbutton',...
+            this.removeTask = uicontrol(this.taskPanel, 'Style', 'pushbutton',...
                 'Fontsize', 10, 'BackgroundColor', 'white', 'String', '-',...
                 'Units', 'normalized', 'Position', [3/4 5/6 1/4 1/6],...
-                'Callback', @(src, event) removeSelectedTask(this));
+                'Callback', @(src, event) removeTask(this));
             %provides a drop down or editable text for adding task labels
             this.defaultTaskMessage = 'Press + to add tasks';
             this.tasks = {};
@@ -177,30 +177,8 @@ classdef EegGui < handle
             end
         end
         
-        %When the user clicks the remove task button
-        function success = removeSelectedTask(this)
-            %if there are any added tasks 
-            if(length(this.tasks) >= 1)
-                %and the task selector is in drop down mode
-                if(strcmp(get(this.taskSelection, 'Style'), 'popupmenu') == 1)
-                    %remove the selected task from tasks
-                    this.tasks{get(this.taskSelection, 'Value')} = [];
-                    this.tasks = this.tasks(~cellfun(@isempty, this.tasks));
-                    set(this.taskSelection, 'String', this.tasks, 'Value',...
-                        length(this.tasks));
-                %and the task selector is not in drop down mode
-                else
-                    %set the task selector to drop down mode
-                    set(this.taskSelection, 'Style', 'popupmenu', 'String',...
-                        this.tasks);
-                end
-            %fi there are no added tasks
-            else
-                %display the default message in a drop down menu
-                set(this.taskSelection, 'Style', 'popupmenu', 'String',...
-                        this.defaultTaskMessage);
-            end
-            success = 1;
+        function success = removeTask(this)
+            selectedTask = get(
         end
         
     end
