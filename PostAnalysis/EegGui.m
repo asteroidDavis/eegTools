@@ -7,14 +7,17 @@ classdef EegGui < handle
         eegFigHandle
         %The panel containing plots
         plotsPanel
+            refresh
         
         %the panel containing controls
         menuPanel
             dataSelectionPanel
-                dataChoice
+                dataType
                     fileData
                     realTimeData
-                dataPath
+                dataChoice
+                    dataName
+                    dataPath
             tasksPanel
                 tasksSelectionText
                     taskSelection
@@ -42,26 +45,28 @@ classdef EegGui < handle
             
             %puts a menue panel at the left side of the gui
             this.menuPanel = uipanel('Title', 'Controls', 'FontSize', 11,...
-                'BackgroundColor', 'white', 'Position', [0 0 1/3 1]);
+                'BackgroundColor', 'white', 'Position', [0 0 1/4 1]);
             
             %given a data selection panel
             this.dataSelectionPanel = uipanel(this.menuPanel,...
                 'Title', 'Data Selection', 'FontSize', 10,... 
                 'BackgroundColor', 'white', 'Position', [0 4/5 1 1/5]);
             %Given radio buttons to select source of data
-            this.dataChoice = uibuttongroup(this.dataSelectionPanel, ...
+            this.dataType = uibuttongroup(this.dataSelectionPanel, ...
                 'Position', [0 1/2 1 1/2]);
             %radio button for data from a file
-            this.fileData = uicontrol(this.dataChoice, 'Style',...
+            this.fileData = uicontrol(this.dataType, 'Style',...
                 'radiobutton', 'String', 'File', 'Units', 'normalized',...
                 'Position', [0 0 1/2 1]);
             %radio button for selecting real time data
-            this.realTimeData = uicontrol(this.dataChoice, 'Style',...
+            this.realTimeData = uicontrol(this.dataType, 'Style',...
                 'radiobutton', 'String', 'real-time', 'Units',...
                 'normalized', 'Position', [1/2 0 1/2 1]);
             %text field for entering file paths or i/o description
-            this.dataPath = uicontrol(this.dataSelectionPanel, 'Style',...
-                'edit', 'Units', 'normalized', 'Position', [0 0 1 1/2]);
+            this.dataChoice = uicontrol(this.dataSelectionPanel, 'Style',...
+                'pushbutton', 'Units', 'normalized', 'String', 'Choose File',...
+                'Callback', @(src,event) chooseData(this),'Position',...
+                [0 0 1 1/2]);
             
             %controls data about each task
             this.tasksPanel = uipanel(this.menuPanel, 'Title', 'Task Info',...
@@ -98,6 +103,12 @@ classdef EegGui < handle
                 'String', '+', 'Units', 'normalized', 'Position',...
                 [1/2 1/3 1/4 1/6], 'Callback',...
                 @(src, event) toggleElectrodeSelection(this));
+            %removing an electrode label
+            this.removeElectrode = uicontrol(this.tasksPanel, 'Style',...
+                'pushbutton', 'Fontsize', 10, 'BackgroundColor', 'white',...
+                'String', '-', 'Units', 'normalized', 'Callback',... 
+                @(src,event) removeSelectedElectrode(this), 'Position',...
+                [3/4 1/3 1/4 1/6]);
             %a dropdown of editable electrode labels
             this.defaultElectrodeMessage = 'Press + to add electrodes';
             this.electrodes = {};
@@ -108,9 +119,13 @@ classdef EegGui < handle
             
             %a plots panel at the right side of the gui
             this.plotsPanel = uipanel('Title', 'Plots', 'FontSize', 10, ...
-                'BackgroundColor', 'white', 'Position', [1/3 0 2/3 1]);
+                'BackgroundColor', 'white', 'Position', [1/4 0 3/4 1]);
             
-        
+            %given a refesh button at the top left of the plot panel
+            this.refresh = uicontrol(this.plotsPanel, 'Style', 'pushbutton',...
+                'FontSize', 10, 'BackgroundColo', 'white', 'String',...
+                char(8635), 'Units','normalized','callback', @(src,event)...
+                refreshPlots(this), 'Position',[0 0.95 0.05 0.05]);
             
             %makes the figure visible once everything is added
             this.eegFigHandle.Visible = 'on';
@@ -147,7 +162,6 @@ classdef EegGui < handle
                 success = 0;
             end
         end
-        
         %When the user clicks '+' next to 'Electrodes'
         function success = toggleElectrodeSelection(this)
             %and the electrode selection task
@@ -194,7 +208,7 @@ classdef EegGui < handle
                     set(this.taskSelection, 'Style', 'popupmenu', 'String',...
                         this.tasks);
                 end
-            %fi there are no added tasks
+            %if there are no added tasks
             else
                 %display the default message in a drop down menu
                 set(this.taskSelection, 'Style', 'popupmenu', 'String',...
@@ -202,7 +216,52 @@ classdef EegGui < handle
             end
             success = 1;
         end
+        %When the user clicks the remove electrode button
+        function success = removeSelectedElectrode(this)
+            %if there are any added electrodes
+            if(length(this.electrodes) >= 1)
+                %and the electrode selector is in drop down mode
+                if(strcmp(get(this.electrodeSelection, 'Style'),...
+                    'popupmenu') == 1)
+                    %then remove the selected electrod from electrodes
+                    this.electrodes{get(this.electrodeSelection, 'Value')}...
+                        = [];
+                    this.electrodes = this.electrodes(~cellfun(@isempty,...
+                        this.electrodes));
+                    set(this.electrodeSelection, 'String', this.electrodes,...
+                        'Value', length(this.electrodes));
+                %and the electrode selector is not in drop down mode
+                else
+                    %set the electrode selector is not in drop down mode
+                    set(this.electrodeSelection, 'Style', 'popupmenu',...
+                        'String', this.defaultElectrodeMessage);
+                end
+            %if there are no added tasks    
+            else
+                %display the default message in the drop down
+                set(this.electrodeSelection, 'Style', 'popupmenu', 'String',...
+                        this.defaultElectrodeMessage);
+            end
+            success = 1;
+        end
         
+        %When refresh is clicked
+        function success = refreshPlots(this)
+        end
+        
+        %When the user clicks choose file
+        function success = chooseData(this)
+            %open a file chooser
+            [this.dataName, this.dataPath] = uigetfile({'*.mat'});
+            %if the data can be sent to the plot
+            if(this.refreshPlots)
+                %report success
+                success = 1;
+            else
+                %report failure
+                success = 0;
+            end
+        end
     end
 end
 
