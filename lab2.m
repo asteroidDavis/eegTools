@@ -1,6 +1,6 @@
 %% analysis of the first EEG in BCI class
 %
-FileName = 'JustAcquire\NateData_2016_1_28_14_57_14.mat';
+FileName = 'data\NateData_2016_1_28_14_57_14.mat';
 load(FileName);
 %%
 yChanNames = {'Time','Counter','Status','Fz','Fp1','Fp2','Cz','C3','C4','O1','O2','InternalCount','TaskNo'};

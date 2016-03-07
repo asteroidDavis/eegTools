@@ -8,6 +8,7 @@ classdef EegGui < handle
         %The panel containing plots
         plotsPanel
             refresh
+            plots
         
         %the panel containing controls
         menuPanel
@@ -17,7 +18,9 @@ classdef EegGui < handle
                     realTimeData
                 dataChoice
                     dataName
+                    dataDir
                     dataPath
+                data
             tasksPanel
                 tasksSelectionText
                     taskSelection
@@ -33,6 +36,16 @@ classdef EegGui < handle
                         electrodes
                 stepsPerPlotText
                 stepsPerPlot
+            domainRangePanel
+                domainLabel
+                    domains
+                    domainTypes
+                        electrodeDomain
+                        taskDomain
+                    firstDomain
+                    lastDomain
+                rangeLabel
+                    ranges
         
     end
     
@@ -41,8 +54,11 @@ classdef EegGui < handle
         function this = EegGui()
             %extends figure
             this.eegFigHandle = figure('Visible', 'off', 'Tag', 'fig',...
-                'Units', 'characters');
+                'Units', 'normalized', 'position', [0 0 1 1]);
             
+            %%%%%%%%%%%%%%%%%%%%
+            %%%% Menu Panel %%%%
+            %%%%%%%%%%%%%%%%%%%%
             %puts a menue panel at the left side of the gui
             this.menuPanel = uipanel('Title', 'Controls', 'FontSize', 11,...
                 'BackgroundColor', 'white', 'Position', [0 0 1/4 1]);
@@ -50,18 +66,19 @@ classdef EegGui < handle
             %given a data selection panel
             this.dataSelectionPanel = uipanel(this.menuPanel,...
                 'Title', 'Data Selection', 'FontSize', 10,... 
-                'BackgroundColor', 'white', 'Position', [0 4/5 1 1/5]);
+                'BackgroundColor', 'white', 'Position', [0 14/15 1 1/15]);
             %Given radio buttons to select source of data
             this.dataType = uibuttongroup(this.dataSelectionPanel, ...
-                'Position', [0 1/2 1 1/2]);
+                'Position', [0 1/2 1/2 1/2]);
             %radio button for data from a file
             this.fileData = uicontrol(this.dataType, 'Style',...
                 'radiobutton', 'String', 'File', 'Units', 'normalized',...
                 'Position', [0 0 1/2 1]);
             %radio button for selecting real time data
             this.realTimeData = uicontrol(this.dataType, 'Style',...
-                'radiobutton', 'String', 'real-time', 'Units',...
-                'normalized', 'Position', [1/2 0 1/2 1]);
+                'radiobutton', 'String', 'rt', 'tooltip', 'real-time data',...
+                'Units', 'normalized', 'Position', [1/2 0 1/2 1], 'callback',...
+                @(src,event) msgbox('Real time plotting is not implemented yet :('));
             %text field for entering file paths or i/o description
             this.dataChoice = uicontrol(this.dataSelectionPanel, 'Style',...
                 'pushbutton', 'Units', 'normalized', 'String', 'Choose File',...
@@ -71,7 +88,7 @@ classdef EegGui < handle
             %controls data about each task
             this.tasksPanel = uipanel(this.menuPanel, 'Title', 'Task Info',...
                 'FontSize', 11, 'BackgroundColor', 'white', 'Position',...
-                [0 2/5 1 2/5]);
+                [0 12/15 1 2/15]);
             %labels the task selection area
             this.tasksSelectionText = uicontrol(this.tasksPanel, 'Style', 'text',...
                 'String', 'Tasks', 'FontSize', 10, 'Units', 'normalized',... 
@@ -117,6 +134,48 @@ classdef EegGui < handle
                 'Position', [0 1/6 1 1/6], 'String',...
                 {this.defaultElectrodeMessage});
             
+            %options for editing the actual data
+            this.domainRangePanel = uipanel(this.menuPanel, 'Title',...
+                'Domain and Range', 'BackgroundColor', 'white', 'Position',...
+                [0 10/15 1 2/15]);
+            this.domainLabel = uicontrol(this.domainRangePanel, 'Style',...
+                'text', 'String', 'domains','BackgroundColor', 'white',...
+                'FontSize', 10, 'Units', 'normalized', 'Position',...
+                [0 3/4 1/2 1/4]);
+            %dropdown of available domain functions
+            this.domains = uicontrol(this.domainRangePanel, 'Style',...
+                'popupmenu', 'String', {'time', 'frequency'},...
+                'BackgroundColor', 'white', 'Units', 'normalized',...
+                'Position', [1/2 3/4 1/2 1/4]);
+            %a button group for choosing electrode or task plots
+            this.domainTypes = uibuttongroup(this.domainRangePanel,...
+                'Position', [0 1/2 1/2 1/3]); 
+            this.electrodeDomain = uicontrol(this.domainTypes, 'Style',...
+                'radiobutton', 'String', 'electrodes','Units', 'normalized',...
+                'Position', [0 0 1/2 1]);
+            this.taskDomain = uicontrol(this.domainTypes, 'Style', 'radiobutton',...
+                'String', 'tasks', 'Units', 'normalized', 'Position',...
+                [1/2 0 1/2 1]);
+            this.firstDomain = uicontrol(this.domainRangePanel, 'Style',...
+                'edit', 'Units', 'normalized', 'tooltip', 'first channel',...
+                'Position', [1/2 1/2 1/4 1/4]);
+            this.lastDomain = uicontrol(this.domainRangePanel, 'Style',...
+                'edit', 'Units', 'normalized', 'tooltip', 'last channel',...
+                'Position', [3/4 1/2 1/4 1/4]);
+            this.rangeLabel = uicontrol(this.domainRangePanel, 'Style',...
+                'text', 'String', 'ranges','BackgroundColor', 'white',...
+                'FontSize', 10, 'Units', 'normalized', 'Position',...
+                [0 1/4 1/2 1/4]);
+            %dropdown of available range functions
+            this.ranges = uicontrol(this.domainRangePanel, 'Style',...
+                'popupmenu', 'String', {'voltage', 'log power',...
+                'epoched', 'epoched with variance'}, 'BackgroundColor',...
+                'white', 'Units', 'normalized', 'Position',...
+                [1/2 1/4 1/2 1/4]);
+            
+            %%%%%%%%%%%%%%%%%%%%%
+            %%%% Plots Panel %%%%
+            %%%%%%%%%%%%%%%%%%%%%
             %a plots panel at the right side of the gui
             this.plotsPanel = uipanel('Title', 'Plots', 'FontSize', 10, ...
                 'BackgroundColor', 'white', 'Position', [1/4 0 3/4 1]);
@@ -130,6 +189,10 @@ classdef EegGui < handle
             %makes the figure visible once everything is added
             this.eegFigHandle.Visible = 'on';
         end
+    end
+    
+    methods(Access = public)
+        
     end
     
     methods(Access = private)
@@ -247,19 +310,50 @@ classdef EegGui < handle
         
         %When refresh is clicked
         function success = refreshPlots(this)
+            %Determine the xlabel
+            domains = get(this.domains, 'String');
+            xlabel = domains{get(this.domains, 'Value')};
+            
+            %determine the domain type
+            dataType = get(get(this.domainTypes, 'SelectedObject'),...
+                'String');
+            
+            %determine the ylabel
+            ranges = get(this.ranges, 'String');
+            ylabel = ranges{get(this.ranges, 'Value')};
+            
+            %initialize plots based on parameters
+            this.plots = EegPlots('electrodes', this.electrodes, 'tasks',...
+                this.tasks, 'data', this.data, 'plotPanel', this.plotsPanel,...
+                'dataType', dataType, 'startChannel', this.firstDomain,...
+                'endChannel', this.lastDomain, 'x', struct('label', xlabel,...
+                'lim',[0 60]), 'y', struct('label', ylabel, 'lim', [-1 1]));
+                
+            success = 1;
         end
         
         %When the user clicks choose file
         function success = chooseData(this)
             %open a file chooser
-            [this.dataName, this.dataPath] = uigetfile({'*.mat'});
-            %if the data can be sent to the plot
-            if(this.refreshPlots)
-                %report success
+            [this.dataName, this.dataDir] = uigetfile({'*.mat'});
+            %if the user cancels 
+            if(isequal(this.dataName, 0))
+                %do nothing and report success
                 success = 1;
+            %if the user picks a file
             else
-                %report failure
-                success = 0;
+                %define the dataPath
+                this.dataPath = strcat(this.dataDir, this.dataName);
+                %load the data
+                this.data = load(this.dataPath);
+                %if the data can be sent to the plot
+                if(refreshPlots(this))
+                    %report success
+                    success = 1;
+                else
+                    %report failure
+                    success = 0;
+                end
             end
         end
     end

@@ -1,43 +1,58 @@
 classdef EegPlots
     %EegPlots -- EegPlots( electrodes, tasks, xAxis, yAxis)
+    %   -the data contained in the plots
     %   -electrodes is a cell array of electrode names. ie {'Cz', 'Pz'}
     %   -tasks is a cell array of the name of each experiment ie. {'rest',
     %       'blink'}
-    %   -xAxis is an optional struct containing info about the x-axis ie. 
-    %       struct( 'label', 'x-axis', 'lim', [0 60], 'domain', {{
-    %       'frequency', 'time'}}
-    %   -yAxis is an optional struct with info about the y-axis
+    %   -x is an optional struct containing info about the x-axis ie. 
+    %       struct( 'label', 'x-axis', 'lim', [0 60])
+    %   -y is an optional struct with info about the y-axis
     %WARNING: Domain must be a cell inside a cell
     
     
     properties(Access = private)
-        axis
-        electrodes
-        tasks
+        
+        plotPanel
+            axis
+        data
+            startChannel
+            endChannel
+        dataType
+            electrodes
+            tasks
     end
     
     methods(Access = public)
         
         %constructs the EegPlots
-        function this = EegPlots(varargin)
-             %allows case insentive parameters and ignore unknown parameters
+        function this = EegPlots(electrodes, tasks, data, plotPanel,...
+                dataType, varargin)
+            %allows case insentive parameters and ignore unknown parameters
             parser = inputParser;
             parser.StructExpand = 0;
             
             %creates default axis when none are expressed
-            defaultXAxis = struct('label', 'x-axis', 'lim', [0 60],...
-                'domain', {{'frequency', 'time'}});
-            defaultYAxis = struct('label', 'y-axis', 'lim', [-1 1],...
-                'domain', {{'normalized data', 'log power'}});
+            defaultXAxis = struct('label', 'x-axis', 'lim', [0 60]);
+            defaultYAxis = struct('label', 'y-axis', 'lim', [-1 1]);
             
             %defines and orders the parameters
             %electrodes must be the first parameter to EegPlots
-            addRequired(parser, 'electrodes', @iscellstr);
+            addRequired(parser, 'electrodes');
             %tasks must be the second parameter to EegPlots
-            addRequired(parser, 'tasks', @iscellstr);
+            addRequired(parser, 'tasks');
+            %data must be the third parameter to EegPlots
+            addRequired(parser, 'data');
+            %Panel to add the plots to. Control is handled from the gui
+            %class
+            addRequired(parser, 'plotPanel');
+            %Electrodes or tasks are the primary plotted element
+            addRequired(parser, 'dataType');
+            %start and end channel corresponsing to a index of data
+            addRequired(parser, 'startChannel');
+            addRequired(parser, 'endChannel');
             %the axis can be in any order
-            addParameter(parser, 'x', defaultXAxis, @validateAxis);
-            addParameter(parser, 'y', defaultYAxis, @validateAxis);
+            addParameter(parser, 'x', defaultXAxis);
+            addParameter(parser, 'y', defaultYAxis);
             
             %parses and passes the arguments to the EegPlots object
             parse(parser, varargin{:});
@@ -45,6 +60,23 @@ classdef EegPlots
             this.axis.y = parser.Results.y;
             this.electrodes = parser.Results.electrodes;
             this.tasks = parser.Results.tasks;
+            this.data = parser.Results.data;
+            this.plotPanel = parser.Results.plotPanel;
+            this.dataType = parser.Resulsts.dataType;
+            this.startChannel = parser.Results.startChannel;
+            this.endChannel = parser.Results.endChannel;
+           
+            %plot the data!!!
+            plot(this);
+        end
+        
+        function success = plot(this)
+            switch this.dataType
+                case 'electrodes', plotTasksByElectrode(this); success = 1;
+                case 'tasks', plotElectodesByTask(this); success = 1;
+                otherwise, warndlg('domains must be set to "electrodes" or "tasks"');
+                    success = 0;
+            end
         end
         
         %validates and sets the axis object
@@ -87,11 +119,13 @@ classdef EegPlots
     
     methods(Access = private)
         
-        %Given an axis variable
-        function isAxis = validateAxis(this, testee)
-            %Is the vairable a struct with a label, lim, and domain
-            isAxis = isstruct(testee) && ischar(testee.label) &&...
-                isnumeric(testee.lim) && iscellstr(testee.domain);
+        function success = plotTasksByElectrode(this)
+            try
+                %extract steps from the data
+                
+            catch
+                
+            end
         end
     end
 end
