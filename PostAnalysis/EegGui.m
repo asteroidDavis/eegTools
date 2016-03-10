@@ -9,6 +9,7 @@ classdef EegGui < handle
         plotsPanel
             refresh
             plots
+            timing
         
         %the panel containing controls
         menuPanel
@@ -44,8 +45,11 @@ classdef EegGui < handle
                         taskDomain
                     firstDomain
                     lastDomain
+                    stepsDomain
                 rangeLabel
                     ranges
+            timingPanel
+                frequencyAcquisition
         
     end
     
@@ -158,10 +162,13 @@ classdef EegGui < handle
                 [1/2 0 1/2 1]);
             this.firstDomain = uicontrol(this.domainRangePanel, 'Style',...
                 'edit', 'Units', 'normalized', 'tooltip', 'first channel',...
-                'Position', [1/2 1/2 1/4 1/4]);
+                'Position', [1/2 1/2 1/6 1/4]);
             this.lastDomain = uicontrol(this.domainRangePanel, 'Style',...
                 'edit', 'Units', 'normalized', 'tooltip', 'last channel',...
-                'Position', [3/4 1/2 1/4 1/4]);
+                'Position', [2/3 1/2 1/6 1/4]);
+            this.stepsDomain = uicontrol(this.domainRangePanel, 'Style',...
+                'edit', 'Units', 'normalized', 'tooltip', 'steps channel',...
+                'Position', [5/6 1/2 1/6 1/4]);
             this.rangeLabel = uicontrol(this.domainRangePanel, 'Style',...
                 'text', 'String', 'ranges','BackgroundColor', 'white',...
                 'FontSize', 10, 'Units', 'normalized', 'Position',...
@@ -172,6 +179,12 @@ classdef EegGui < handle
                 'epoched', 'epoched with variance'}, 'BackgroundColor',...
                 'white', 'Units', 'normalized', 'Position',...
                 [1/2 1/4 1/2 1/4]);
+            
+            this.timingPanel = uipanel(this.menuPanel, 'Title', 'Timing',...
+                'BackgroundColor', 'white', 'Position', [0 9/15 1 1/15]);
+            this.frequencyAcquisition = uicontrol(this.timingPanel, 'Style',...
+                'edit', 'Units', 'normalized', 'tooltip', 'Frequency of Acquisition',...
+                'Position', [0 0 1 1]);
             
             %%%%%%%%%%%%%%%%%%%%%
             %%%% Plots Panel %%%%
@@ -315,20 +328,54 @@ classdef EegGui < handle
             xlabel = domains{get(this.domains, 'Value')};
             
             %determine the domain type
-            dataType = get(get(this.domainTypes, 'SelectedObject'),...
+            domainType = get(get(this.domainTypes, 'SelectedObject'),...
                 'String');
             
             %determine the ylabel
             ranges = get(this.ranges, 'String');
             ylabel = ranges{get(this.ranges, 'Value')};
             
+            %determine timing info
+            facq = get(this.frequencyAcquisition, 'String');
+            
+            %attempts to extract timing details
+            try
+                %determine the channel numbering
+                startChannel = get(this.firstDomain, 'String');
+                endChannel = get(this.lastDomain, 'String');
+                stepsChannel = get(this.stepsDomain, 'String');
+                this.timing = EegTiming(Steps.stepExtract(this.data(...
+                    stepsChannel, :)), facq);
+            %sometimes the channel numbers will be wrong
+            catch
+                %creates a dialog for using new channels
+                prompt = {['Choose different channel numbers' SysText.newLine...
+                    ArrayStrings.lengthDisp(this.data) SysText.newLine...
+                    'Start Channel:'],'End Channel:', 'Steps Channel:'};
+                dlg_title = 'Channel Error';
+                corrections = inputdlg(prompt, dlg_title);
+                %gathers response to the dialog
+                startChannel = corrections{1};
+                endChannel = corrections{2};
+                stepsChannel = corrections{3};
+                %determine the channel numbering
+                set(this.firstDomain, 'String', startChannel);
+                set(this.lastDomain, 'String', endChannel);
+                whos;
+                set(this.stepsDomain, 'String', stepsChannel);
+                %calculate the start and end times of steps
+                this.timing = EegTiming(Steps.stepExtract(this.data(...
+                    stepsChannel, :)), facq);
+            end
+            
             %initialize plots based on parameters
             this.plots = EegPlots('electrodes', this.electrodes, 'tasks',...
                 this.tasks, 'data', this.data, 'plotPanel', this.plotsPanel,...
-                'dataType', dataType, 'startChannel', this.firstDomain,...
-                'endChannel', this.lastDomain, 'x', struct('label', xlabel,...
-                'lim',[0 60]), 'y', struct('label', ylabel, 'lim', [-1 1]));
-                
+                'dataType', domainType, 'startChannel', startChannel,...
+                'endChannel', endChannel, 'stepsChannel', stepsChannel,...
+                'x', struct('label', xlabel, 'lim',[0 60]), 'y',...
+                struct('label', ylabel, 'lim', [-1 1]));
+                                
             success = 1;
         end
         
@@ -346,6 +393,7 @@ classdef EegGui < handle
                 this.dataPath = strcat(this.dataDir, this.dataName);
                 %load the data
                 this.data = load(this.dataPath);
+                this.data = this.data.y;
                 %if the data can be sent to the plot
                 if(refreshPlots(this))
                     %report success

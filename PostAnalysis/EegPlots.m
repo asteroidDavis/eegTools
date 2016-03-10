@@ -17,9 +17,11 @@ classdef EegPlots
         data
             startChannel
             endChannel
+            stepsChannel
         dataType
             electrodes
             tasks
+        timing
     end
     
     methods(Access = public)
@@ -50,6 +52,7 @@ classdef EegPlots
             %start and end channel corresponsing to a index of data
             addRequired(parser, 'startChannel');
             addRequired(parser, 'endChannel');
+            addRequired(parser, 'stepsChannel');
             %the axis can be in any order
             addParameter(parser, 'x', defaultXAxis);
             addParameter(parser, 'y', defaultYAxis);
@@ -65,9 +68,8 @@ classdef EegPlots
             this.dataType = parser.Resulsts.dataType;
             this.startChannel = parser.Results.startChannel;
             this.endChannel = parser.Results.endChannel;
-           
-            %plot the data!!!
-            plot(this);
+            this.stepsChannel = parser.Results.stepsChannel;
+            
         end
         
         function success = plot(this)
@@ -119,14 +121,6 @@ classdef EegPlots
     
     methods(Access = private)
         
-        function success = plotTasksByElectrode(this)
-            try
-                %extract steps from the data
-                
-            catch
-                
-            end
-        end
     end
 end
 
