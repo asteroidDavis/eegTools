@@ -344,30 +344,25 @@ classdef EegGui < handle
                 startChannel = get(this.firstDomain, 'String');
                 endChannel = get(this.lastDomain, 'String');
                 stepsChannel = get(this.stepsDomain, 'String');
-                this.timing = EegTiming('steps', Steps.stepExtract(this.data(...
-                    stepsChannel, :)), 'acquisitionFrequency', facq);
+                this.timing = EegTiming(Steps.stepExtract(this.data(...
+                    stepsChannel, :)), facq);
             %sometimes the channel numbers will be wrong
             catch
                 %creates a dialog warning of the wrong channels
                 warndlg(['Can"t extract steps from channel ' stepsChannel]);
-                %sets the steps channel to the empty string
+                %sets the steps channel 
                 set(this.stepsDomain, 'String', '');
             end
             
-            try 
-                %initialize plots based on parameters
-                this.plots = EegPlots('electrodes', this.electrodes, 'tasks',...
-                    this.tasks, 'data', this.data, 'plotPanel', this.plotsPanel,...
-                    'dataType', domainType, 'startChannel', startChannel,...
-                    'endChannel', endChannel, 'stepsChannel', stepsChannel,...
-                    'x', struct('label', xlabel, 'lim',[0 60]), 'y',...
-                    struct('label', ylabel, 'lim', [-1 1]));
-                success = 1;
-            catch
-                warndlg('Could not plot data');
-                success = 0;
-            end
+            %initialize plots based on parameters
+            this.plots = EegPlots('electrodes', this.electrodes, 'tasks',...
+                this.tasks, 'data', this.data, 'plotPanel', this.plotsPanel,...
+                'dataType', domainType, 'startChannel', startChannel,...
+                'endChannel', endChannel, 'stepsChannel', stepsChannel,...
+                'x', struct('label', xlabel, 'lim',[0 60]), 'y',...
+                struct('label', ylabel, 'lim', [-1 1]));
                                 
+            success = 1;
         end
         
         %When the user clicks choose file

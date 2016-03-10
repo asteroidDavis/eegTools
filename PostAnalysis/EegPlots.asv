@@ -123,36 +123,16 @@ classdef EegPlots
         %plots one electrode per subplot with all the tasks for the
         %electrode
         function success = plotTasksByElectrode(this)
-            totalChannels = this.endChannel-this.startChannel;
+            totalChannels = this.end
             %iterates over the electrodes
             for electrode = this.startChannel:this.endChannel
-                %plot in two columns for even numbers of channels
-                if(rem(totalChannels, 2) == 0)
-                    subplot(totalChannels/2, 2, totalChannels-electrode);
-                    plotElectrode(this);
-                %plot if three columns for a multiple of three channel
-                %count
-                elseif(rem(totalChannels, 3) == 0)
-                    subplot(totalChannels/3, 3, totalChannels-electrode);
-                    plotElectrode(this);
-                %plot in a single column
-                else
-                    subplot(totalChannels, 1, totalChannels-electrode);
-                    plotElectrode(this);
-                end
+                
             end
-            success = 1;
         end
         %plots one task per subplot with the all the electrodes from the
         %task
         function success = plotElectrodesByTask(this)
             
-        end
-        %plots on electrode against all acquisition time
-        function success = plotElectrode(this)
-            plot(0:this.timing.acquisitionFrequency:this.timing.maxTim,...
-                this.data(electrode));
-            success = 1;
         end
     end
 end
