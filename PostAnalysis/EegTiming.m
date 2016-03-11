@@ -11,6 +11,8 @@ classdef EegTiming
         acquisitionFrequency
         %The minimum frequency which can be detected is Facq/2
         nyquistFrequency
+        %interval between recordings
+        dt
         %the maximum time in this recording
         maxTime
     end
@@ -18,7 +20,6 @@ classdef EegTiming
     methods(Access = public)
         %constructor for EegTiming
         function this = EegTiming(varargin)
-            this;
             
             %creates an input parser whihc allows structs
             parser = inputParser;
@@ -36,45 +37,28 @@ classdef EegTiming
             %defines nyquistFrequency and maxTime based on requied
             %parameters
             this.nyquistFrequency = this.acquisitionFrequency/2;
-            this.maxTime = this.steps(end).endTime;
+            this.maxTime = this.steps{end}(2);
+            this.dt = 1/this.acquisitionFrequency;
         end
         
-        %validates and sets the acquisition frequency
-        function setAcquisitionFrequency(this, acquisitionFrequency)
-            if(isnumeric(acquisitionFrequency))
-                this.acquisitionFrequency = acquisitionFrequency;
-            else
-                warning(strcat(acquisitionFrequency, ' is not numeric'));
-            end
-        end
+        %%%%%%%%%%%%%%%%%%%
+        %%%% Accessors %%%%
+        %%%%%%%%%%%%%%%%%%%
         function acquisitionFrequency = getAcquisitionFrequency(this)
             acquisitionFrequency = this.acquisitionFrequency;
-        end
-        
-        %validates and sets the nyquist frequency
-        function setNyquistFrequency(this, nyquistFrequency)
-            if(isnumeric(nyquistFrequency))
-                this.nyquistFrequency = nyquistFrequency;
-            else
-                warning(strcat(nyquistFrequency, ' is not numeric'));
-            end
         end
         function nyquistFrequency = getNyquistFrequency(this)
             nyquistFrequency = this.nyquistFrequency;
         end
-        
-        %validates and sets numeric max time
-        function setMaxTime(this, maxTime)
-            if(isnumeric(maxTime))
-                this.maxTime = maxTime;
-            else
-                warning(strcat(maxTime, ' is not numeric'));
-            end
-        end
         function maxTime = getMaxTime(this)
             maxTime = this.maxTime;
         end
-        
+        function dt = getDt(this)
+            dt = this.dt;
+        end
+        function steps = getSteps(this)
+            steps = this.steps;
+        end
     end
     
     

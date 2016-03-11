@@ -35,8 +35,6 @@ classdef EegGui < handle
                     electrodeSelection
                         defaultElectrodeMessage
                         electrodes
-                stepsPerPlotText
-                stepsPerPlot
             domainRangePanel
                 domainLabel
                     domains
@@ -336,22 +334,29 @@ classdef EegGui < handle
             ylabel = ranges{get(this.ranges, 'Value')};
             
             %determine timing info
-            facq = get(this.frequencyAcquisition, 'String');
+            facq = str2double(get(this.frequencyAcquisition, 'String'));
             
             %attempts to extract timing details
             try
                 %determine the channel numbering
-                startChannel = get(this.firstDomain, 'String');
-                endChannel = get(this.lastDomain, 'String');
-                stepsChannel = get(this.stepsDomain, 'String');
+                startChannel = str2double(get(this.firstDomain, 'String'));
+                endChannel = str2double(get(this.lastDomain, 'String'));
+                stepsChannel = str2double(get(this.stepsDomain, 'String'));
+                %determine the step times and macx time with a timing
+                %object
                 this.timing = EegTiming('steps', Steps.stepExtract(this.data(...
-                    stepsChannel, :)), 'acquisitionFrequency', facq);
+                    stepsChannel,:)), 'acquisitionFrequency', facq);
             %sometimes the channel numbers will be wrong
-            catch
-                %creates a dialog warning of the wrong channels
-                warndlg(['Can"t extract steps from channel ' stepsChannel]);
-                %sets the steps channel to the empty string
-                set(this.stepsDomain, 'String', '');
+            catch ME
+                %if there is an error
+                if(~strcmp(ME.identifier, ''))
+                    %creates a dialog warning of the wrong channels
+                    wrn = warndlg({'Can"t extract steps from channel ';...
+                        ME.message; ME.cause; StructStrings.expand(ME.stack)});
+                    waitfor(wrn);
+                    %sets the steps channel to the empty string
+                    set(this.stepsDomain, 'String', '');
+                end
             end
             
             try 
@@ -360,14 +365,20 @@ classdef EegGui < handle
                     this.tasks, 'data', this.data, 'plotPanel', this.plotsPanel,...
                     'dataType', domainType, 'startChannel', startChannel,...
                     'endChannel', endChannel, 'stepsChannel', stepsChannel,...
-                    'x', struct('label', xlabel, 'lim',[0 60]), 'y',...
-                    struct('label', ylabel, 'lim', [-1 1]));
+                    'timing', this.timing, 'x', struct('label', xlabel,...
+                    'lim',[0 60]), 'y', struct('label', ylabel, 'lim', [-1 1]));
+                
+                this.plots.plot();
                 success = 1;
-            catch
-                warndlg('Could not plot data');
-                success = 0;
-            end
-                                
+            catch ME
+                %if there is an error
+                if(~strcmp(ME.identifier, ''))
+                    wrn = warndlg({'Could not plot data'; ME.message;...
+                        ME.cause; 'Trace'; StructStrings.expand(ME.stack)});
+                    waitfor(wrn);
+                    success = 0;
+                end
+            end    
         end
         
         %When the user clicks choose file

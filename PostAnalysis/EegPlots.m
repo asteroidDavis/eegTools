@@ -22,54 +22,44 @@ classdef EegPlots
             electrodes
             tasks
         timing
+        tabGroup
     end
     
     methods(Access = public)
         
         %constructs the EegPlots
-        function this = EegPlots(electrodes, tasks, data, plotPanel,...
-                dataType, varargin)
-            %allows case insentive parameters and ignore unknown parameters
-            parser = inputParser;
-            parser.StructExpand = 0;
+        function this = EegPlots(varargin)
+            %creates an axis for the x and y objects
+            this.axis = struct();
+            %defines defaults and parameter names
+            options = struct('electrodes', 'no electrodes', 'tasks', 'no tasks',...
+                'data', zeros(1), 'plotPanel', '', 'dataType',...
+                'electrodes', 'startChannel', 1, 'endChannel', 1, 'stepsChannel',...
+                1, 'timing', '', 'x', struct('label', 'x-axis', 'lim',...
+                [0 60]), 'y', struct('label', 'y-axis', 'lim', [-1 1]));
+            optionNames = fieldnames(options);
             
-            %creates default axis when none are expressed
-            defaultXAxis = struct('label', 'x-axis', 'lim', [0 60]);
-            defaultYAxis = struct('label', 'y-axis', 'lim', [-1 1]);
+            %ensure there is an even number of parameters
+            if(rem(length(varargin), 2) ~= 0)
+                error('EegPlots needs propertyName, propertyValue pairs');
+            end
             
-            %defines and orders the parameters
-            %electrodes must be the first parameter to EegPlots
-            addRequired(parser, 'electrodes');
-            %tasks must be the second parameter to EegPlots
-            addRequired(parser, 'tasks');
-            %data must be the third parameter to EegPlots
-            addRequired(parser, 'data');
-            %Panel to add the plots to. Control is handled from the gui
-            %class
-            addRequired(parser, 'plotPanel');
-            %Electrodes or tasks are the primary plotted element
-            addRequired(parser, 'dataType');
-            %start and end channel corresponsing to a index of data
-            addRequired(parser, 'startChannel');
-            addRequired(parser, 'endChannel');
-            addRequired(parser, 'stepsChannel');
-            %the axis can be in any order
-            addParameter(parser, 'x', defaultXAxis);
-            addParameter(parser, 'y', defaultYAxis);
-            
-            %parses and passes the arguments to the EegPlots object
-            parse(parser, varargin{:});
-            this.axis.x = parser.Results.x;
-            this.axis.y = parser.Results.y;
-            this.electrodes = parser.Results.electrodes;
-            this.tasks = parser.Results.tasks;
-            this.data = parser.Results.data;
-            this.plotPanel = parser.Results.plotPanel;
-            this.dataType = parser.Resulsts.dataType;
-            this.startChannel = parser.Results.startChannel;
-            this.endChannel = parser.Results.endChannel;
-            this.stepsChannel = parser.Results.stepsChannel;
-            
+            %parts params in {name; value}
+            for pair = reshape(varargin, 2, [])
+                paramName = pair{1};
+                
+                %looks for param names matching the defined parameters
+                %names
+                if(any(strcmp(paramName, optionNames)))
+                    if(strcmp(paramName, 'x') || strcmp(paramName, 'y'))
+                        this.axis.(paramName) = pair{2};
+                    else
+                        this.(paramName) = pair{2};
+                    end
+                else
+                    warning('Ignoring unknown parameter %s', paramName);
+                end
+            end
         end
         
         function success = plot(this)
@@ -123,23 +113,37 @@ classdef EegPlots
         %plots one electrode per subplot with all the tasks for the
         %electrode
         function success = plotTasksByElectrode(this)
-            totalChannels = this.endChannel-this.startChannel;
-            %iterates over the electrodes
-            for electrode = this.startChannel:this.endChannel
-                %plot in two columns for even numbers of channels
-                if(rem(totalChannels, 2) == 0)
-                    subplot(totalChannels/2, 2, totalChannels-electrode);
-                    plotElectrode(this);
-                %plot if three columns for a multiple of three channel
-                %count
-                elseif(rem(totalChannels, 3) == 0)
-                    subplot(totalChannels/3, 3, totalChannels-electrode);
-                    plotElectrode(this);
-                %plot in a single column
-                else
-                    subplot(totalChannels, 1, totalChannels-electrode);
-                    plotElectrode(this);
+            %The tab group containing each task
+            this.tabGroup = uitabgroup(this.plotPanel, 'Position', [0.05 0 0.95 0.95]);
+            %The channel count from this recording
+            totalChannels = this.endChannel-this.startChannel+1;
+            %iterate over the tasks in this recording
+            index = 1;
+            for task = this.tasks
+                %converts cell to char
+                task = task{1};
+                taskTab = uitab(this.tabGroup, 'Title', task);
+                %iterates over the electrodes
+                for electrode = this.startChannel:this.endChannel
+                    %plot in two columns for even numbers of channels
+                    if(rem(totalChannels, 2) == 0)
+                        subplot(totalChannels/2, 2, electrode-this.startChannel+1,...
+                            'Parent', taskTab);
+                        plotElectrode(this, electrode, index);
+                    %plot if three columns for a multiple of three channel
+                    %count
+                    elseif(rem(totalChannels, 3) == 0)
+                        subplot(totalChannels/3, 3, electrode-this.startChannel+1,...
+                            'Parent', taskTab);
+                        plotElectrode(this, electrode, index);
+                    %plot in a single column
+                    else
+                        subplot(totalChannels, 1, electrode-this.startChannel+1,...
+                            'Parent', taskTab);
+                        plotElectrode(this, electrode, index);
+                    end
                 end
+                index = index +1;
             end
             success = 1;
         end
@@ -149,9 +153,17 @@ classdef EegPlots
             
         end
         %plots on electrode against all acquisition time
-        function success = plotElectrode(this)
-            plot(0:this.timing.acquisitionFrequency:this.timing.maxTim,...
-                this.data(electrode));
+        function success = plotElectrode(this, electrode, taskIndex)
+            minIndex = this.timing.getSteps{taskIndex}(1);
+            maxIndex = this.timing.getSteps{taskIndex}(2);
+            minTime = minIndex*this.timing.getDt;
+            maxTime = maxIndex*this.timing.getDt;
+            plot(minTime:this.timing.getDt:maxTime, this.data(electrode,...
+                minIndex:maxIndex));
+            xlim(this.axis.x.lim);
+            ylim(this.axis.y.lim);
+            xlabel(this.axis.x.label);
+            ylabel(this.axis.y.label);
             success = 1;
         end
     end
