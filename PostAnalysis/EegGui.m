@@ -48,6 +48,9 @@ classdef EegGui < handle
                     ranges
             timingPanel
                 frequencyAcquisition
+            filterPanel
+                addFilter
+                removeFilter
         
     end
     

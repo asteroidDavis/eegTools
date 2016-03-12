@@ -63,6 +63,9 @@ classdef EegPlots
         end
         
         function success = plot(this)
+            %The tab group containing each task
+            this.tabGroup = uitabgroup(this.plotPanel, 'Position', [0.05 0 0.95 0.95]);
+            %
             switch this.dataType
                 case 'electrodes', plotTasksByElectrode(this); success = 1;
                 case 'tasks', plotElectrodesByTask(this); success = 1;
@@ -113,8 +116,6 @@ classdef EegPlots
         %plots one electrode per subplot with all the tasks for the
         %electrode
         function success = plotTasksByElectrode(this)
-            %The tab group containing each task
-            this.tabGroup = uitabgroup(this.plotPanel, 'Position', [0.05 0 0.95 0.95]);
             %The channel count from this recording
             totalChannels = this.endChannel-this.startChannel+1;
             %iterate over the tasks in this recording
@@ -129,39 +130,80 @@ classdef EegPlots
                     if(rem(totalChannels, 2) == 0)
                         subplot(totalChannels/2, 2, electrode-this.startChannel+1,...
                             'Parent', taskTab);
-                        plotElectrode(this, electrode, index);
                     %plot if three columns for a multiple of three channel
                     %count
                     elseif(rem(totalChannels, 3) == 0)
                         subplot(totalChannels/3, 3, electrode-this.startChannel+1,...
                             'Parent', taskTab);
-                        plotElectrode(this, electrode, index);
                     %plot in a single column
                     else
                         subplot(totalChannels, 1, electrode-this.startChannel+1,...
                             'Parent', taskTab);
-                        plotElectrode(this, electrode, index);
                     end
+                    plotElectrode(this, electrode, index);
                 end
                 index = index +1;
             end
             success = 1;
         end
+        
         %plots one task per subplot with the all the electrodes from the
         %task
         function success = plotElectrodesByTask(this)
-            
+            totalTasks = length(this.timing.getSteps);
+            electrodeIndex = 1;
+            %iterates over electrodes
+            for electrode = this.electrodes
+                electrode = electrode{1};
+                %puts each electrode in a new tab
+                electrodeTab = uitab(this.tabGroup, 'Title', electrode);
+                %iterates over the task intervals
+                taskIndex = 1;
+                for taskInterval = this.timing.getSteps
+                    %if we should plot in two columns
+                    if(rem(totalTasks, 2) == 0)
+                        subplot(totalTasks/2, 2, taskIndex, 'Parent',...
+                            electrodeTab);
+                    elseif(rem(totalTasks, 3) == 0)
+                        subplot(totalTasks/3, 3, taskIndex, 'Parent',...
+                            electrodeTab);
+                    else
+                        subplot(totalTasks, 1, taskIndex, 'Parent',...
+                            electrodeTab);
+                    end
+                    plotTask(this, taskInterval{1}, electrodeIndex);
+                    taskIndex = taskIndex+1;
+                end
+                electrodeIndex = electrodeIndex + 1;
+            end
+            success = 1;
         end
+        
         %plots on electrode against all acquisition time
         function success = plotElectrode(this, electrode, taskIndex)
             minIndex = this.timing.getSteps{taskIndex}(1);
             maxIndex = this.timing.getSteps{taskIndex}(2);
             minTime = minIndex*this.timing.getDt;
             maxTime = maxIndex*this.timing.getDt;
-            plot(minTime:this.timing.getDt:maxTime, this.data(electrode,...
-                minIndex:maxIndex));
-            xlim(this.axis.x.lim);
-            ylim(this.axis.y.lim);
+            electrodeData = this.data(electrode,minIndex:maxIndex);
+            plot(minTime:this.timing.getDt:maxTime, electrodeData);
+            xlim([minTime maxTime]);
+            ylim([min(electrodeData) max(electrodeData)]);
+            xlabel(this.axis.x.label);
+            ylabel(this.axis.y.label);
+            success = 1;
+        end
+        
+        function success = plotTask(this, taskInterval, electrodeIndex)
+            times = taskInterval.*this.timing.getDt;
+            minTime = times(1);
+            maxTime = times(2);
+            electrodeChannel = electrodeIndex-1+this.startChannel;
+            taskData = this.data(electrodeChannel, taskInterval(1):...
+                taskInterval(2));
+            plot(minTime:this.timing.getDt:maxTime, taskData);
+            xlim([minTime maxTime]);
+            ylim([min(taskData) max(taskData)]);
             xlabel(this.axis.x.label);
             ylabel(this.axis.y.label);
             success = 1;
