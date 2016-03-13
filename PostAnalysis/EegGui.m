@@ -52,6 +52,9 @@ classdef EegGui < handle
                 addFilter
                 removeFilter
                 filters
+                filterNames
+                defaultFilterString
+                filterSelection
                     filterNameLabel
                         filterName
                     filterFunctionLabel
@@ -200,7 +203,9 @@ classdef EegGui < handle
                 'Position', [0 0 1 1]);
             
             %create, modify, and remove filters
-            defaultFilterString = 'Press "+" to make a new filter';
+            this.filters = {};
+            this.filterNames = {};
+            this.defaultFilterString = 'Press "+" to make a new filter';
             avaialableFilterFunctions = {'butter'};
             availableFilterTypes = {'bandpass', 'notch'};
             this.filterPanel = uipanel(this.menuPanel, 'Title', 'Filters (filtfilt)',...
@@ -215,9 +220,9 @@ classdef EegGui < handle
                 'pushbutton', 'String', '-', 'Fontsize', 10,...
                 'BackgroundColor', 'white', 'Units', 'normalized',...
                 'Position', [3/4 5/6 1/4 1/6], 'callback', @(src,event)...
-                destroyFilter(this));
-            this.filters = uicontrol(this.filterPanel, 'Style', 'popupmenu',...
-                'String', {defaultFilterString}, 'Fontsize', 10, 'Units',...
+                removeSelectedFilter(this));
+            this.filterSelection = uicontrol(this.filterPanel, 'Style', 'popupmenu',...
+                'String', {this.defaultFilterString}, 'Fontsize', 10, 'Units',...
                 'normalized', 'Position', [0 5/6 1/2 1/6]);
             %this stuff appears as you add a filter
             this.filterNameLabel = uicontrol(this.filterPanel, 'Style',...
@@ -347,57 +352,16 @@ classdef EegGui < handle
         end
         
         %When the user clicks the remove task button
-        function success = removeSelectedTask(this)
-            %if there are any added tasks 
-            if(length(this.tasks) >= 1)
-                %and the task selector is in drop down mode
-                if(strcmp(get(this.taskSelection, 'Style'), 'popupmenu') == 1)
-                    %remove the selected task from tasks
-                    this.tasks{get(this.taskSelection, 'Value')} = [];
-                    this.tasks = this.tasks(~cellfun(@isempty, this.tasks));
-                    set(this.taskSelection, 'String', this.tasks, 'Value',...
-                        length(this.tasks));
-                %and the task selector is not in drop down mode
-                else
-                    %set the task selector to drop down mode
-                    set(this.taskSelection, 'Style', 'popupmenu', 'String',...
-                        this.tasks);
-                end
-            %if there are no added tasks
-            else
-                %display the default message in a drop down menu
-                set(this.taskSelection, 'Style', 'popupmenu', 'String',...
-                        this.defaultTaskMessage);
-            end
-            success = 1;
+        function removeSelectedTask(this)
+            this.tasks = popupmenuTools.removeItem(this.taskSelection,...
+                this.tasks, get(this.taskSelection, 'Value'),...
+                this.defaultTaskMessage);
         end
         %When the user clicks the remove electrode button
-        function success = removeSelectedElectrode(this)
-            %if there are any added electrodes
-            if(length(this.electrodes) >= 1)
-                %and the electrode selector is in drop down mode
-                if(strcmp(get(this.electrodeSelection, 'Style'),...
-                    'popupmenu') == 1)
-                    %then remove the selected electrod from electrodes
-                    this.electrodes{get(this.electrodeSelection, 'Value')}...
-                        = [];
-                    this.electrodes = this.electrodes(~cellfun(@isempty,...
-                        this.electrodes));
-                    set(this.electrodeSelection, 'String', this.electrodes,...
-                        'Value', length(this.electrodes));
-                %and the electrode selector is not in drop down mode
-                else
-                    %set the electrode selector is not in drop down mode
-                    set(this.electrodeSelection, 'Style', 'popupmenu',...
-                        'String', this.defaultElectrodeMessage);
-                end
-            %if there are no added tasks    
-            else
-                %display the default message in the drop down
-                set(this.electrodeSelection, 'Style', 'popupmenu', 'String',...
-                        this.defaultElectrodeMessage);
-            end
-            success = 1;
+        function removeSelectedElectrode(this)
+            this.electrodes = popupmenuTools.removeItem(this.electrodeSelection,...
+                this.electrodes, get(this.electrodeSelection, 'Value'),...
+                this.defaultElectrodeMessage);
         end
         
         %When refresh is clicked
@@ -490,10 +454,26 @@ classdef EegGui < handle
         
         %Given the user clicks the plus next to the filter list
         function createFilter(this)
-            %enable an edit for the filter name
-            set(this.filterName, 'enable', 'on');
-            %focus on the filter name
-            UiControlTools.setFocus(this.filterName);
+            %if the user has already set the filter options
+            if(strcmp(get(this.filterName, 'enable'), 'on')) 
+                %add the filter to the list of filters
+                newFilter = struct('name', get(this.filterName, 'String'),...
+                    'function', popupmenuTools.selectedItem(this.filterFunction),...
+                    'type', popupmenuTools.selectedItem(this.filterType),...
+                    'order', double(get(this.filterOrder, 'String')),...
+                    'frequencies',[double(get(this.lowFrequency, 'String'))...
+                    double(get(this.highFrequency, 'String'))]);
+                filterString = newFilter.name;
+                this.filters{end+1} = newFilter;
+                this.filterNames{end+1} = filterString;
+                set(this.filterSelection, 'String', this.filterNames);
+            %if the user has not set the filter options
+            else
+                %enable an edit for the filter name
+                set(this.filterName, 'enable', 'on');
+                %focus on the filter name
+                UiControlTools.setFocus(this.filterName);
+            end
         end
         
         %Given the enters text in the filter name field
@@ -513,9 +493,12 @@ classdef EegGui < handle
                 UiControlTools.setFocus(this.filterFunction);
             end
         end
+        
         %Given the user clicks the minus next to the filter list
-        function success = destroyFilter(this)
-            
+        function removeSelectedFilter(this)
+            [this.filterNames, this.filters] = popupmenuTools.removeItem(...
+                this.filterSelection, this.filterNames, this.filters,...
+                get(this.filterSelection, 'Value'), this.defaultFilterString);
         end
     end
 end
