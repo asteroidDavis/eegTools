@@ -223,7 +223,8 @@ classdef EegGui < handle
                 removeSelectedFilter(this));
             this.filterSelection = uicontrol(this.filterPanel, 'Style', 'popupmenu',...
                 'String', {this.defaultFilterString}, 'Fontsize', 10, 'Units',...
-                'normalized', 'Position', [0 5/6 1/2 1/6]);
+                'normalized', 'Position', [0 5/6 1/2 1/6], 'callback',...
+                @(src,event) filterData(this));
             %this stuff appears as you add a filter
             this.filterNameLabel = uicontrol(this.filterPanel, 'Style',...
                 'text', 'BackgroundColor', 'white', 'String' , 'Name:',...
@@ -441,14 +442,7 @@ classdef EegGui < handle
                 %load the data
                 this.data = load(this.dataPath);
                 this.data = this.data.y;
-                %if the data can be sent to the plot
-                if(refreshPlots(this))
-                    %report success
-                    success = 1;
-                else
-                    %report failure
-                    success = 0;
-                end
+                success = 1;
             end
         end
         
@@ -499,6 +493,23 @@ classdef EegGui < handle
             [this.filterNames, this.filters] = popupmenuTools.removeItem(...
                 this.filterSelection, this.filterNames, this.filters,...
                 get(this.filterSelection, 'Value'), this.defaultFilterString);
+        end
+        
+        function filterData(this)
+            %if a filter is selected
+            if(~strcmp(get(this.filterSelection, 'String'),...
+                    this.defaultFilterString))
+                digitalFilt = Filters('name', get(this.filterName, 'String'),...
+                    'filtFunction', popupmenuTools.selectedItem(this.filterFunction),...
+                    'filtType', popupmenuTools.selectedItem(this.filterType),...
+                    'order', double(get(this.filterOrder, 'String')),...
+                    'frequencies', [double(get(this.lowFrequency, 'String'))...
+                    double(get(this.highFrequency, 'String'))], 'facq',...
+                    double(get(this.frequencyAcquisition, 'String')));
+                this.data = Filters.zeroPhaseFilt(digitalFilt, this.data);
+            else
+                warndlg('You must create a filter first');
+            end
         end
     end
 end
