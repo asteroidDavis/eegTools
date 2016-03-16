@@ -9,9 +9,11 @@ classdef Filters
         order
         %the frequencies for the filter
         frequencies
+        normalizedFrequencies
         facq
         %the filter function
-        filterDesign
+        bDesign
+        aDesign
         %the filt filt zero phase filter
         dFilter
     end
@@ -21,7 +23,7 @@ classdef Filters
             
             %parese parameters
             options = struct('name', 'NA', 'filtFunction', 'NA', 'filtType',...
-                'NA', 'order', 0, 'frequencies', [], 'facq', facq);
+                'NA', 'order', 0, 'frequencies', [], 'facq', 0);
             optionNames = fieldnames(options);
             
             %when there are the appropriate number of parameters
@@ -41,6 +43,8 @@ classdef Filters
                 end
             end
             
+            this.normalizedFrequencies = this.frequencies./this.facq;
+            
             %set up the filter function
             switch this.filtFunction
                 %implements butterworth iir filters
@@ -48,12 +52,8 @@ classdef Filters
                     switch this.filtType
                         %butterworth iir bandpass filter
                         case 'bandpass',
-                            this.filterDesign = designfilt('bandpassiir',...
-                                'FilterOrder', this.order,...
-                                'PassbandFrequency1', this.frequencies(1),...
-                                'PassbandFrequency2', this.frequencies(2),...
-                                'SampleRate', this.facq, 'DesignMethod',...
-                                this.filtFunction);
+                           [this.bDesign, this.aDesign] = butter(this.order,...
+                               this.normalizedFrequencies, this.filtType);
                         %butterworth irr bandstop filter
                         case 'stop', 
                             this.filterDesign = designfilt('bandstopiir',...
@@ -87,13 +87,14 @@ classdef Filters
     
     methods(Static)
         %given data and a digital filter
-        function data = zeroPhaseFilt(digitalFilt, data)
+        function data = zeroPhaseFilt(filt, data)
             %filtfilt the data
-            for i = 1:length(data)
-               data(i) = filtfilt(digitalFilt, data(i)); 
+            for i = 1:length(data(:,1))
+               data(i,:) = filtfilt(filt.bDesign, filt.aDesign, data(i, :)); 
             end
         end
     end
     
 end
+
 

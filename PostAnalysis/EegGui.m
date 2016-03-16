@@ -366,7 +366,7 @@ classdef EegGui < handle
         end
         
         %When refresh is clicked
-        function success = refreshPlots(this)
+        function refreshPlots(this)
             %Determine the xlabel
             domains = get(this.domains, 'String');
             xlabel = domains{get(this.domains, 'Value')};
@@ -402,6 +402,7 @@ classdef EegGui < handle
                     waitfor(wrn);
                     %sets the steps channel to the empty string
                     set(this.stepsDomain, 'String', '');
+                    rethrow(ME);
                 end
             end
             
@@ -415,14 +416,13 @@ classdef EegGui < handle
                     'lim',[0 60]), 'y', struct('label', ylabel, 'lim', [-1 1]));
                 
                 this.plots.plot();
-                success = 1;
             catch ME
                 %if there is an error
                 if(~strcmp(ME.identifier, ''))
                     wrn = warndlg({'Could not plot data'; ME.message;...
                         ME.cause; 'Trace'; StructStrings.expand(ME.stack)});
                     waitfor(wrn);
-                    success = 0;
+                    rethrow(ME);
                 end
             end    
         end
@@ -499,14 +499,16 @@ classdef EegGui < handle
             %if a filter is selected
             if(~strcmp(get(this.filterSelection, 'String'),...
                     this.defaultFilterString))
+                startChannel = str2double(get(this.firstDomain, 'String'));
+                endChannel = str2double(get(this.lastDomain, 'String'));
                 digitalFilt = Filters('name', get(this.filterName, 'String'),...
                     'filtFunction', popupmenuTools.selectedItem(this.filterFunction),...
                     'filtType', popupmenuTools.selectedItem(this.filterType),...
-                    'order', double(get(this.filterOrder, 'String')),...
-                    'frequencies', [double(get(this.lowFrequency, 'String'))...
-                    double(get(this.highFrequency, 'String'))], 'facq',...
-                    double(get(this.frequencyAcquisition, 'String')));
-                this.data = Filters.zeroPhaseFilt(digitalFilt, this.data);
+                    'order', str2double(get(this.filterOrder, 'String')),...
+                    'frequencies', [str2double(get(this.lowFrequency, 'String')) str2double(get(this.highFrequency, 'String'))],...
+                    'facq', str2double(get(this.frequencyAcquisition, 'String')));
+                this.data(startChannel:endChannel, :) = Filters.zeroPhaseFilt(...
+                    digitalFilt, this.data(startChannel:endChannel, :));
             else
                 warndlg('You must create a filter first');
             end
