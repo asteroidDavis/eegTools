@@ -1,4 +1,4 @@
-classdef Filters
+classdef Filters < handle
     %Filters -Filters from EegGui's filter panel
     %   
     
@@ -14,8 +14,6 @@ classdef Filters
         %the filter function
         bDesign
         aDesign
-        %the filt filt zero phase filter
-        dFilter
     end
     
     methods(Access = public)
@@ -56,25 +54,18 @@ classdef Filters
                                this.normalizedFrequencies, this.filtType);
                         %butterworth irr bandstop filter
                         case 'stop', 
-                            this.filterDesign = designfilt('bandstopiir',...
-                                'FilterOrder', this.order,...
-                                'PassbandFrequency1', this.frequencies(1),...
-                                'PassbandFrequency2', this.frequencies(2),...
-                                'SampleRate', this.facq, 'DesignMethod',...
-                                this.filtFunction);
+                            [this.bDesign, this.aDesign] = butter(this.order,...
+                               this.normalizedFrequencies, this.filtType);
                         %butterworth iir highpass filter
                         case 'high',
-                            this.filterDesign = designfilt('highpassiir',...
-                                'FilterOrder', this.order,...
-                                'PassbandFrequency', this.frequencies(2),...
-                                'SampleRate', this.facq, 'DesignMethod',...
-                                this.filtFunction);
+                            [this.bDesign, this.aDesign] = butter(this.order,...
+                                this.normalizedFrequencies(1),...
+                                this.filtType);
                         %butterworth iir lowpass filter
                         case 'low', 
-                            this.filterDesign = designfilt('lowpassiir',...
-                                'FilterOrder', this.order,...
-                                'PassbandFrequency', this.frequencies(1),...
-                                'SampleRate', this.facq);
+                            [this.bDesign, this.aDesign] = butter(this.order,...
+                                this.normalizedFrequencies(1),...
+                                this.filtType);
                         otherwise
                             error('%s is not implemented', this.filtType);
                     end
@@ -82,6 +73,64 @@ classdef Filters
                     error('%s is not implemented or not a filter method',...
                         this.filtFunction);
             end
+        end
+    end
+    
+    methods(Access = public)
+        %Getters and setters
+        function name = getName(this)
+            name = this.name;
+        end
+        function setName(this, name)
+            this.name = name;
+        end
+        function filtFunction = getFiltFunction(this)
+            filtFunction = this.filtFunction;
+        end
+        function setFiltFunction(this, filtFunction)
+            this.filtFunction = filtFunction;
+        end
+        function filtType = getFiltType(this)
+            filtType = this.filtType;
+        end
+        function setFiltType(this, filtType)
+            this.filtType = filtType;
+        end
+        function order = getOrder(this)
+            order = this.order;
+        end
+        function setOrder(this, order)
+            this.order = order;
+        end
+        function frequencies = getFrequencies(this)
+            frequencies = this.frequencies;
+        end
+        function setFrequencies(this, frequencies)
+            this.frequencies = frequencies;
+        end
+        function normalizedFrequencies = getNormalizedFrequencies(this)
+            normalizedFrequencies = this.normalizedFrequencies;
+        end
+        function setNormalizedFrequencies(this, normalizedFrequencies)
+            this.normalizedFrequencies = normalizedFrequencies;
+        end
+        function facq = getFacq(this)
+            facq = this.facq;
+        end
+        function setFacq(this, facq)
+            this.facq = facq;
+        end
+        function bDesign = getBDesign(this)
+            bDesign = this.bDesign;
+        end
+        function setBDesign(this, bDesign)
+            this.bDesign = bDesign;
+        end
+        function aDesign = getADesign(this)
+            aDesign = this.aDesign;
+        end
+        function setADesign(this, aDesign)
+            this.aDesign = aDesign;
         end
     end
     

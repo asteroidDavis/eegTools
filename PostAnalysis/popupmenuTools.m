@@ -56,9 +56,20 @@ classdef popupmenuTools
         end
         
         %item is the current item selected in the popupmenu
-        function item = selectedItem(menu)
-            items = get(menu, 'String');
-            item= items{get(menu, 'Value')};
+        function item = selectedItem(varargin)
+            switch length(varargin)
+                case 1,...
+                    menu = varargin{1};
+                    items = get(menu, 'String');
+                    item = items{get(menu, 'Value')};
+                case 2,...
+                    itemNames = varargin{1};
+                    items = varargin{2};
+                    index = get(itemNames, 'Value');
+                    item = items{index};
+                otherwise,
+                    error('Bad params');
+            end
         end
     end
     

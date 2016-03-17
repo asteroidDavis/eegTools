@@ -141,6 +141,7 @@ classdef EegPlots
                             'Parent', taskTab);
                     end
                     plotElectrode(this, electrode, index);
+                    title(this.electrodes{electrode-this.startChannel+1});
                 end
                 index = index +1;
             end
@@ -172,6 +173,7 @@ classdef EegPlots
                             electrodeTab);
                     end
                     plotTask(this, taskInterval{1}, electrodeIndex);
+                    title(this.tasks{taskIndex});
                     taskIndex = taskIndex+1;
                 end
                 electrodeIndex = electrodeIndex + 1;
