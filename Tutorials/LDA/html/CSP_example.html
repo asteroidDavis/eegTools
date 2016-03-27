@@ -1,0 +1,531 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      --><title>Common Spatial Patterns example</title><meta name="generator" content="MATLAB 7.9"><meta name="date" content="2010-04-09"><meta name="m-file" content="CSP_example"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head><body><div class="content"><h1>Common Spatial Patterns example</h1><!--introduction--><p>Bruce J. Gluckman 4/2010</p><p>See references by Koles, 1991 EEG and clincial NeuroPhys 79, PMID 1721571</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Theory of Common Spatial Patterns (CSP)</a></li><li><a href="#2">First a question - what does SVD do</a></li><li><a href="#3">Now create Data</a></li><li><a href="#4">Now compute estimates of the covariance matricies</a></li><li><a href="#5">Now compute W</a></li><li><a href="#6">Now test CPA</a></li><li><a href="#7">Plot results for Za (computed from Sa) and Zb (computed from Sb)</a></li><li><a href="#8">Compare rank ordered signals in Za and Zb</a></li><li><a href="#9">Finally note the projections of our lead fields onto new space</a></li><li><a href="#10">now compare predicted vs measured for Za.</a></li></ul></div><h2>Theory of Common Spatial Patterns (CSP)<a name="1"></a></h2><p>general scheme: Assume a lead field model for EEG with sources S and assume there are at least two kinds of sources, call them types a,b and that you have EEG that you can identify as both mixtures of BOTH and is isolated to (or excludes) one</p><p>if you want, by extension, add some noise. Now we want to find a measure that best isolate data from each of these sources</p><p>Mathematically, a lead field model says that the EEG across the leads is a linear projection (linear mixture) of the sources, plus noise</p><p>EEG = M*S + U</p><p>we adopt a notation that the the EEG has N channels, which we pack in different rows, and that measured times go across in columns. So EEG = (NxT) where T is number of times.</p><p>Likewise, we imagine Q sources, each of which have their time dependence, and lead fields for each packed into the matrix M. so     S = (QxT) and     M = (NxQ)</p><p>for our purposes, we can break up M*S into three parts associated with source a,b and noise</p><p>EEG = Ma*Sa + Mb*Sb + Mn*Sn + U</p><p>which we can reinterpret as</p><p>EEG = Ea + Eb + En</p><p>with     Ea = Ma*Sa     Eb = Mb*Sb     En = Mn*Sn + U</p><p>Note that dimension of the E's are all NxT though we could make different sample types for example that have {a, b, both} types of data</p><p>CSP Steps are as follows:</p><p>1) identify time periods such that the EEG contains two of the three    types of activity:    EEGa =&gt; mostly type a data (or NOT type a data)    EEGb =&gt; mostly type b data    EEGc =&gt; composite type a and b           (can be simultaneous or concatonated [EEGa EEGb]</p><p>2) Define the normalized covariance C = EEG*EEG'/trace(EEG*EEG')    Compute for EEGa, EEGc, called Ca, Cc    technically or for consistency, the normalization value should    always be the same.  Normalization really is only needed for    comparing patterns</p><pre>  Note that
+  Cc = Ca + Cb</pre><pre>  Note on decompositon - we can do an eigenvalue decomposition
+  C = U*L*U'
+      L is diagonal eigenvalues
+      U has eigenvectors in columns
+      U'*U = I</pre><p>3) Compute the prewhitening transformation P as follows:    a) decompose Cc = Uc*Lc*Uc'    b) round off singluar eigenvalues elements in Lc    c) define inverse square root of Lc Isqrt(Lc)       such that the diagonal values are 1/sqrt(Lc_i) for non-singluar       eigenvalues    d) P = Isqrt(Lc)*Uc'</p><p>4) Define covariance of prewhitened data as S = P*C*P'    a) Sc = P*(Ca + Cb)*P'       Sc = Sa + Sb    b) by construction Sc = I       I = Sa + Sb       Sb = I - Sa        <b>*    c) Decompose Sa = B*Psia*B'    d) if pre/post multiply *</b> by B' B you get       B'*Sb*B = I-Psia       the RHS of which is diagonal SO if       If         decompose Sb = R*Psib*R'       Then         B'R = I         Psib = I-Psia       B is also set of eignenvectors for Sb       B eigenvectors are Common Spatial Patterns to both Sa and Sb       Note that the order of Psia is decreasing and Psib is Increasing</p><pre>5)  Now define overall transformation to new coordinate system
+    ZEEG = W*EEG
+    W = B'*P
+    ZEEG will contain primarily a type data in first row and
+                                b type data in last row</pre><h2>First a question - what does SVD do<a name="2"></a></h2><pre class="codeinput">sig = [2 1; 1 1];
+sig = sig/trace(sig);
+[u,s,v]=svd(sig);
+<span class="comment">% Note that since sig is Hermitian (sig' = sig)</span>
+<span class="comment">% u'=v</span>
+disp(<span class="string">'sig='</span>);
+disp(sig);
+disp([<span class="string">'[u,s,v]=svd(sig)'</span>]);
+disp(<span class="string">'eigenvalues s'</span>);
+disp(s);
+disp(<span class="string">'u'</span>);
+disp(u);
+disp(<span class="string">'u-v'' = '</span>);
+disp(u-v);
+disp(<span class="string">'u''*u = '</span>);
+disp(u'*u);
+<span class="comment">% so our observation is that, given a square Hermitian matrix sig</span>
+<span class="comment">% [u,l,v] = svd(sig)</span>
+<span class="comment">% yields an ordered set of eigenvalues on the diagonal of l</span>
+<span class="comment">% and two matricies u = v'</span>
+<span class="comment">% u'*u = 1;</span>
+<span class="comment">% the columns of u have the eigenvectors.</span>
+clear <span class="string">all</span>; close <span class="string">all</span>;
+<span class="comment">%</span>
+</pre><pre class="codeoutput">sig=
+    0.6667    0.3333
+    0.3333    0.3333
+
+[u,s,v]=svd(sig)
+eigenvalues s
+    0.8727         0
+         0    0.1273
+
+u
+   -0.8507   -0.5257
+   -0.5257    0.8507
+
+u-v' = 
+   1.0e-15 *
+
+    0.4441    0.1110
+    0.1110   -0.3331
+
+u'*u = 
+    1.0000   -0.0000
+   -0.0000    1.0000
+
+</pre><h2>Now create Data<a name="3"></a></h2><p>Assume 2 sources - Sa, Sb wtih projections onto N channel EEG with source Lead Fields Ma, Mb Then EEG is EEG = Ma*Sa + Mb*Sb + U where U is a mixure of common Uc and indpendent Ui NOISE where of course 'noise' mean other sources</p><p>EEG = Ma*Sa + Mb*Sb + Mc*Sc + Ui</p><p>Number of Channels N</p><pre class="codeinput">N = 6;
+<span class="comment">% Acqusition Rate</span>
+SPS = 1000;
+<span class="comment">%</span>
+Ma = [-1 2 -1 .1 .1 .1 ]';
+Mb = [-.1 -.1 0 -1 2 -1]';
+Mn = [ .1 .2 .3 .2 .1 -.1]';
+<span class="comment">%</span>
+<span class="comment">% Now make time series</span>
+Ea = 1.0 * Ma * randn(1,1000) + <span class="keyword">...</span>
+     0.0 * Mb * randn(1,1000) + <span class="keyword">...</span>
+     0.2 * Mn * randn(1,1000) + <span class="keyword">...</span>
+     0.1 * randn(6,1000);
+<span class="comment">%</span>
+Eb = 0.0 * Ma * randn(1,1000) + <span class="keyword">...</span>
+     1.0 * Mb * randn(1,1000) + <span class="keyword">...</span>
+     0.2 * Mn * randn(1,1000) + <span class="keyword">...</span>
+     0.1 * randn(6,1000);
+
+<span class="comment">%</span>
+Time = (0:1/SPS:20);
+NPTS = length(Time);
+ModA = sin(0.2*pi*Time);
+ModB = cos(2.0*pi*Time);
+Ec = Ma * (ModA.* randn(1,NPTS)) + <span class="keyword">...</span>
+     Mb * (ModB.* randn(1,NPTS)) + <span class="keyword">...</span>
+     0.2 * Mn * randn(1,NPTS) + <span class="keyword">...</span>
+     0.1 * randn(6,NPTS);
+</pre><h2>Now compute estimates of the covariance matricies<a name="4"></a></h2><pre class="codeinput">Cc = Ec*Ec';
+Cc = Cc/trace(Cc);
+<span class="comment">%</span>
+Ca = Ea*Ea';
+Ca = Ca/trace(Ca);
+<span class="comment">% now decode</span>
+[Uc,Lc,Vc] = svd(Cc);
+verysmall = 1e-10;
+sLci = Lc;
+<span class="keyword">for</span> ind=1:N
+    sLci(ind,ind) = (Lc(ind,ind)&gt;verysmall)/sqrt(Lc(ind,ind));
+<span class="keyword">end</span>
+P = sLci * Uc';
+<span class="comment">%</span>
+</pre><h2>Now compute W<a name="5"></a></h2><p>but do it separately for a and for b. They should yeild roughly the same results, though not quite exactly.</p><pre class="codeinput">Ca = Ea*Ea';
+Ca = Ca/trace(Ca);
+Sa = P*Ca*P';
+[Ba,Psia,Va] = svd(Sa);
+Wa = Ba'*P;
+<span class="comment">%</span>
+Cb = Eb*Eb';
+Cb = Cb/trace(Cb);
+Sb = P*Cb*P';
+[Bb,Psib,Vb] = svd(Sb);
+Wb = Bb'*P;
+</pre><h2>Now test CPA<a name="6"></a></h2><p>do this by computing Z for both the Wa and the Wb transforms then we'll compare the results Note that since we are maximizing the projected variances we'll use a mean-square computed by first squaring then low pass filtering.</p><p>later when we compare these results, we'll need to allow for a short phase delay between actual changes in source amplitudes (encoded with the Mod functions) and the MS which we've gotten with a low-pass filter</p><pre class="codeinput">Za = Wa*Ec;
+Zb = Wb*Ec;
+<span class="comment">% use a mean square low-pass filtered by .5 s (2 Hz) to estimate</span>
+Za2 = Za.*Za;
+Zb2 = Zb.*Zb;
+<span class="comment">%</span>
+[b,a] = butter(4,5/(SPS/2));
+<span class="comment">%</span>
+Za2f = filter(b,a,Za2,[],2);
+Zb2f = filter(b,a,Zb2,[],2);
+</pre><h2>Plot results for Za (computed from Sa) and Zb (computed from Sb)<a name="7"></a></h2><pre class="codeinput">figure;
+Fig1.a(1) = subplot(2,1,1);
+plot(Time,Za2f);
+ylabel(<span class="string">'Za-MS'</span>)
+
+Fig1.a(2) = subplot(2,1,2);
+plot(Time,Zb2f);
+ylabel(<span class="string">'Zb-MS'</span>)
+xlabel(<span class="string">'Time'</span>)
+linkaxes(Fig1.a,<span class="string">'xy'</span>);
+ylim([0 20]);
+</pre><img vspace="5" hspace="5" src="CSP_example_01.png" alt=""> <h2>Compare rank ordered signals in Za and Zb<a name="8"></a></h2><pre class="codeinput">figure;
+<span class="keyword">for</span> ind = 1:N
+    Fig2.a(ind) = subplot(N+1,1,ind);
+    plot(Time,Za2f(ind,:),<span class="string">'b'</span>,<span class="keyword">...</span>
+         Time,Zb2f(1+N-ind,:),<span class="string">'m'</span>);
+    lab = sprintf(<span class="string">'Z_m_s[%d,:]'</span>,ind);
+    ylabel(lab);
+    <span class="keyword">if</span> (ind==1)
+        title(<span class="string">'Mean Square Z for both Wa and Wb by channel'</span>);
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+linkaxes(Fig2.a(1:N),<span class="string">'xy'</span>);
+legend(<span class="string">'Za'</span>,<span class="string">'Zb'</span>);
+Fig1.a(N+1) = subplot(N+1,1,N+1);
+plot(Time,ModA.*ModA,<span class="string">'r'</span>,<span class="keyword">...</span>
+     Time,ModB.*ModB,<span class="string">'g'</span>);
+ylabel(<span class="string">'Mod_s^2'</span>)
+xlabel(<span class="string">'Time'</span>)
+legend(<span class="string">'Mod_A^2'</span>,<span class="string">'Mod_B^2'</span>);
+linkaxes(Fig2.a,<span class="string">'x'</span>);
+</pre><img vspace="5" hspace="5" src="CSP_example_02.png" alt=""> <h2>Finally note the projections of our lead fields onto new space<a name="9"></a></h2><pre class="codeinput">MZa = Wa * Ma;
+MZb = Wa * Mb;
+Mzn = Wa * Mn;
+disp(<span class="string">'Mza \n Mzb \n Mzn'</span>);
+disp([MZa'; MZb'; Mzn']);
+</pre><pre class="codeoutput">Mza \n Mzb \n Mzn
+   -3.4712    0.0016   -0.1195    0.0863   -0.0702    0.0024
+   -0.0589    0.0030    0.0037   -0.0261   -0.0066   -3.4967
+   -0.1949    0.8099    5.5511    3.9876    4.4848   -0.0348
+
+</pre><h2>now compare predicted vs measured for Za.<a name="10"></a></h2><p>Use weight from Ma and Mb through Wa to normalize the input Moda and Modb</p><pre class="codeinput">Norma = MZa(1)*MZa(1);
+Normb = MZb(N)*MZb(N);
+figure;
+Fig3.a(1)=subplot(2,1,1);
+plot(Time,Norma*ModA.*ModA,<span class="string">'r'</span>,<span class="keyword">...</span>
+    Time,Za2f(1,:),<span class="string">'b'</span>);
+legend(<span class="string">'Moda^2 normalized'</span>, <span class="string">'Za(1)-RMS'</span>);
+Fig3.a(2)=subplot(2,1,2);
+plot(Time,Normb*ModB.*ModB,<span class="string">'g'</span>,<span class="keyword">...</span>
+    Time,Za2f(N,:),<span class="string">'m'</span>);
+legend(<span class="string">'Modb^2 normalized'</span>, <span class="string">'Za(N)-RMS'</span>);
+linkaxes(Fig3.a,<span class="string">'xy'</span>);
+ylim([0 20]);
+</pre><img vspace="5" hspace="5" src="CSP_example_03.png" alt=""> <p class="footer"><br>
+      Published with MATLAB&reg; 7.9<br></p></div><!--
+##### SOURCE BEGIN #####
+%% Common Spatial Patterns example
+% Bruce J. Gluckman
+% 4/2010
+%
+% See references by Koles, 1991 EEG and clincial NeuroPhys 79, PMID 1721571
+%% Theory of Common Spatial Patterns (CSP)
+%
+% general scheme: 
+% Assume a lead field model for EEG with sources S
+% and assume there are at least two kinds of sources, call them types a,b
+% and that you have EEG that you can identify as both mixtures of BOTH
+% and is isolated to (or excludes) one
+% 
+% if you want, by extension, add some noise.
+% Now we want to find a measure that best isolate data from each of these
+% sources
+%
+% Mathematically, a lead field model says that the EEG across the leads
+% is a linear projection (linear mixture) of the sources, plus noise
+% 
+% EEG = M*S + U
+% 
+% we adopt a notation that the the EEG has N channels, which we pack in 
+% different rows, and that measured times go across in columns.
+% So EEG = (NxT) where T is number of times.
+% 
+% Likewise, we imagine Q sources, each of which have their time dependence,
+% and lead fields for each packed into the matrix M.
+% so 
+%     S = (QxT)
+% and
+%     M = (NxQ)
+% 
+% for our purposes, we can break up M*S into three parts associated with
+% source a,b and noise
+%
+% EEG = Ma*Sa + Mb*Sb + Mn*Sn + U
+%
+% which we can reinterpret as
+% 
+% EEG = Ea + Eb + En
+% 
+% with 
+%     Ea = Ma*Sa
+%     Eb = Mb*Sb
+%     En = Mn*Sn + U
+%
+% Note that dimension of the E's are all NxT
+% though we could make different sample types for example that 
+% have {a, b, both} types of data
+%
+% CSP Steps are as follows:
+%
+% 1) identify time periods such that the EEG contains two of the three
+%    types of activity: 
+%    EEGa => mostly type a data (or NOT type a data)
+%    EEGb => mostly type b data  
+%    EEGc => composite type a and b 
+%           (can be simultaneous or concatonated [EEGa EEGb]
+%
+% 2) Define the normalized covariance C = EEG*EEG'/trace(EEG*EEG')
+%    Compute for EEGa, EEGc, called Ca, Cc  
+%    technically or for consistency, the normalization value should
+%    always be the same.  Normalization really is only needed for
+%    comparing patterns
+%
+%    Note that 
+%    Cc = Ca + Cb
+%
+%    Note on decompositon - we can do an eigenvalue decomposition
+%    C = U*L*U'
+%        L is diagonal eigenvalues
+%        U has eigenvectors in columns
+%        U'*U = I
+%
+% 3) Compute the prewhitening transformation P as follows:
+%    a) decompose Cc = Uc*Lc*Uc'
+%    b) round off singluar eigenvalues elements in Lc
+%    c) define inverse square root of Lc Isqrt(Lc)
+%       such that the diagonal values are 1/sqrt(Lc_i) for non-singluar
+%       eigenvalues
+%    d) P = Isqrt(Lc)*Uc'
+%
+% 4) Define covariance of prewhitened data as S = P*C*P'
+%    a) Sc = P*(Ca + Cb)*P' 
+%       Sc = Sa + Sb    
+%    b) by construction Sc = I
+%       I = Sa + Sb
+%       Sb = I - Sa        **
+%    c) Decompose Sa = B*Psia*B'
+%    d) if pre/post multiply ** by B' B you get
+%       B'*Sb*B = I-Psia     
+%       the RHS of which is diagonal SO if 
+%       If 
+%         decompose Sb = R*Psib*R'
+%       Then 
+%         B'R = I
+%         Psib = I-Psia
+%       B is also set of eignenvectors for Sb
+%       B eigenvectors are Common Spatial Patterns to both Sa and Sb
+%       Note that the order of Psia is decreasing and Psib is Increasing
+%
+%  5)  Now define overall transformation to new coordinate system 
+%      ZEEG = W*EEG
+%      W = B'*P
+%      ZEEG will contain primarily a type data in first row and 
+%                                  b type data in last row
+% 
+%
+%%  First a question - what does SVD do
+%
+sig = [2 1; 1 1];
+sig = sig/trace(sig);
+[u,s,v]=svd(sig);
+% Note that since sig is Hermitian (sig' = sig)  
+% u'=v
+disp('sig=');
+disp(sig);
+disp(['[u,s,v]=svd(sig)']);
+disp('eigenvalues s');
+disp(s);
+disp('u');
+disp(u);
+disp('u-v'' = ');
+disp(u-v); 
+disp('u''*u = ');
+disp(u'*u);
+% so our observation is that, given a square Hermitian matrix sig
+% [u,l,v] = svd(sig)
+% yields an ordered set of eigenvalues on the diagonal of l
+% and two matricies u = v'
+% u'*u = 1;
+% the columns of u have the eigenvectors.
+clear all; close all;
+%
+%% Now create Data
+%
+% Assume 2 sources - Sa, Sb
+% wtih projections onto N channel EEG with 
+% source Lead Fields Ma, Mb
+% Then EEG is 
+% EEG = Ma*Sa + Mb*Sb + U
+% where U is a mixure of common Uc and indpendent Ui NOISE
+% where of course 'noise' mean other sources
+% 
+% EEG = Ma*Sa + Mb*Sb + Mc*Sc + Ui
+%
+% Number of Channels N
+N = 6;
+% Acqusition Rate 
+SPS = 1000;
+%
+Ma = [-1 2 -1 .1 .1 .1 ]';
+Mb = [-.1 -.1 0 -1 2 -1]';
+Mn = [ .1 .2 .3 .2 .1 -.1]';
+% 
+% Now make time series 
+Ea = 1.0 * Ma * randn(1,1000) + ...
+     0.0 * Mb * randn(1,1000) + ...
+     0.2 * Mn * randn(1,1000) + ...
+     0.1 * randn(6,1000);
+%
+Eb = 0.0 * Ma * randn(1,1000) + ...
+     1.0 * Mb * randn(1,1000) + ...
+     0.2 * Mn * randn(1,1000) + ...
+     0.1 * randn(6,1000);
+
+%
+Time = (0:1/SPS:20);
+NPTS = length(Time);
+ModA = sin(0.2*pi*Time);
+ModB = cos(2.0*pi*Time);
+Ec = Ma * (ModA.* randn(1,NPTS)) + ...
+     Mb * (ModB.* randn(1,NPTS)) + ...
+     0.2 * Mn * randn(1,NPTS) + ...
+     0.1 * randn(6,NPTS);
+%% Now compute estimates of the covariance matricies
+%
+Cc = Ec*Ec';
+Cc = Cc/trace(Cc);
+%
+Ca = Ea*Ea';
+Ca = Ca/trace(Ca);
+% now decode
+[Uc,Lc,Vc] = svd(Cc);
+verysmall = 1e-10;
+sLci = Lc;
+for ind=1:N
+    sLci(ind,ind) = (Lc(ind,ind)>verysmall)/sqrt(Lc(ind,ind));
+end
+P = sLci * Uc';
+%
+%% Now compute W 
+% but do it separately for a and for b. They should yeild 
+% roughly the same results, though not quite exactly.
+%
+Ca = Ea*Ea';
+Ca = Ca/trace(Ca);
+Sa = P*Ca*P';
+[Ba,Psia,Va] = svd(Sa);
+Wa = Ba'*P;
+%
+Cb = Eb*Eb';
+Cb = Cb/trace(Cb);
+Sb = P*Cb*P';
+[Bb,Psib,Vb] = svd(Sb);
+Wb = Bb'*P;
+%% Now test CPA
+%
+% do this by computing Z for both the Wa and the Wb transforms
+% then we'll compare the results
+% Note that since we are maximizing the projected variances
+% we'll use a mean-square computed by first squaring then
+% low pass filtering.  
+%
+% later when we compare these results, we'll need to 
+% allow for a short phase delay between actual changes in source
+% amplitudes (encoded with the Mod functions) and the MS 
+% which we've gotten with a low-pass filter
+%
+Za = Wa*Ec;
+Zb = Wb*Ec;
+% use a mean square low-pass filtered by .5 s (2 Hz) to estimate
+Za2 = Za.*Za;
+Zb2 = Zb.*Zb;
+%
+[b,a] = butter(4,5/(SPS/2));
+%
+Za2f = filter(b,a,Za2,[],2);
+Zb2f = filter(b,a,Zb2,[],2);
+%% Plot results for Za (computed from Sa) and Zb (computed from Sb)
+%
+figure;
+Fig1.a(1) = subplot(2,1,1);
+plot(Time,Za2f);
+ylabel('Za-MS')
+
+Fig1.a(2) = subplot(2,1,2);
+plot(Time,Zb2f);
+ylabel('Zb-MS')
+xlabel('Time')
+linkaxes(Fig1.a,'xy');
+ylim([0 20]);
+%% Compare rank ordered signals in Za and Zb
+%
+figure;
+for ind = 1:N
+    Fig2.a(ind) = subplot(N+1,1,ind);
+    plot(Time,Za2f(ind,:),'b',...
+         Time,Zb2f(1+N-ind,:),'m');
+    lab = sprintf('Z_m_s[%d,:]',ind);
+    ylabel(lab);
+    if (ind==1)
+        title('Mean Square Z for both Wa and Wb by channel');
+    end
+end
+linkaxes(Fig2.a(1:N),'xy');
+legend('Za','Zb');
+Fig1.a(N+1) = subplot(N+1,1,N+1);
+plot(Time,ModA.*ModA,'r',...
+     Time,ModB.*ModB,'g');
+ylabel('Mod_s^2')
+xlabel('Time')
+legend('Mod_A^2','Mod_B^2');
+linkaxes(Fig2.a,'x');
+%% Finally note the projections of our lead fields onto new space
+%
+%  
+MZa = Wa * Ma;
+MZb = Wa * Mb;
+Mzn = Wa * Mn;
+disp('Mza \n Mzb \n Mzn');
+disp([MZa'; MZb'; Mzn']);
+%% now compare predicted vs measured for Za.  
+% Use weight from Ma and Mb through Wa
+% to normalize the input Moda and Modb
+Norma = MZa(1)*MZa(1);
+Normb = MZb(N)*MZb(N);
+figure;
+Fig3.a(1)=subplot(2,1,1);
+plot(Time,Norma*ModA.*ModA,'r',...
+    Time,Za2f(1,:),'b');
+legend('Moda^2 normalized', 'Za(1)-RMS');
+Fig3.a(2)=subplot(2,1,2);
+plot(Time,Normb*ModB.*ModB,'g',...
+    Time,Za2f(N,:),'m');
+legend('Modb^2 normalized', 'Za(N)-RMS');
+linkaxes(Fig3.a,'xy');
+ylim([0 20]);
+##### SOURCE END #####
+--></body></html>
